@@ -40,7 +40,7 @@ export const urlField: INodeProperties = {
 	type: 'string',
 	default: '',
 	placeholder: 'https://google.com',
-	description: 'Initial URL to load in the window',
+	description: 'URL to load in the window',
 };
 
 export const autoTerminateSessionHint: NodeHint = {
@@ -63,11 +63,11 @@ export function getSessionModeFields(resource: string, operations: string[]): IN
 			description: 'Choose between creating a new session or using an existing one',
 			options: [
 				{
-					name: 'Automatically Create a New Session',
+					name: 'Automatically Create Session',
 					value: SESSION_MODE.NEW,
 				},
 				{
-					name: 'Use an Existing Session',
+					name: 'Use Existing Session',
 					value: SESSION_MODE.EXISTING,
 				},
 			],

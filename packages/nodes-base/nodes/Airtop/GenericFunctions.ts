@@ -1,6 +1,7 @@
 import { NodeApiError, type IExecuteFunctions, type INode } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
+import { SESSION_MODE } from './actions/common/fields';
 import {
 	ERROR_MESSAGES,
 	DEFAULT_TIMEOUT_MINUTES,
@@ -203,7 +204,7 @@ export function validateAirtopApiResponse(node: INode, response: IAirtopResponse
  */
 export function shouldCreateNewSession(this: IExecuteFunctions, index: number) {
 	const sessionMode = this.getNodeParameter('sessionMode', index) as string;
-	return Boolean(sessionMode && sessionMode === 'new');
+	return Boolean(sessionMode && sessionMode === SESSION_MODE.NEW);
 }
 
 /**

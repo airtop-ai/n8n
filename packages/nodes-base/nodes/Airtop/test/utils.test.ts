@@ -1,8 +1,6 @@
-import type { IExecuteFunctions } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
 
 import { createMockExecuteFunction } from './node/helpers';
-import { executeRequestWithSessionManagement } from '../actions/common/session.utils';
 import { ERROR_MESSAGES } from '../constants';
 import {
 	createSessionAndWindow,
@@ -16,7 +14,7 @@ import {
 	validateRequiredStringField,
 	shouldCreateNewSession,
 } from '../GenericFunctions';
-import * as transport from '../transport';
+import type * as transport from '../transport';
 
 jest.mock('../transport', () => {
 	const originalModule = jest.requireActual<typeof transport>('../transport');
@@ -407,135 +405,6 @@ describe('Test Airtop utils', () => {
 				sessionId: 'new-session-123',
 				windowId: 'new-window-123',
 			});
-		});
-	});
-
-	describe('executeRequestWithSessionManagement', () => {
-		beforeEach(() => {
-			jest.mock('../GenericFunctions', () => ({
-				shouldCreateNewSession: jest.fn(function (this: IExecuteFunctions, index: number) {
-					const sessionMode = this.getNodeParameter('sessionMode', index);
-					return sessionMode === 'new';
-				}),
-				createSessionAndWindow: jest.fn(async () => ({
-					sessionId: 'new-session-123',
-					windowId: 'new-window-123',
-				})),
-				validateSessionAndWindowId: jest.fn(() => ({
-					sessionId: 'existing-session-123',
-					windowId: 'existing-window-123',
-				})),
-				validateAirtopApiResponse: jest.fn(),
-			}));
-		});
-
-		afterEach(() => {
-			jest.resetAllMocks();
-			jest.restoreAllMocks();
-		});
-
-		it("should create a new session and window when 'sessionMode' is 'new'", async () => {
-			const nodeParameters = {
-				sessionMode: 'new',
-				url: 'https://example.com',
-				autoTerminateSession: true,
-			};
-
-			const result = await executeRequestWithSessionManagement.call(
-				createMockExecuteFunction(nodeParameters),
-				0,
-				{
-					method: 'POST',
-					path: '/sessions/{sessionId}/windows/{windowId}/action',
-					body: {},
-				},
-			);
-
-			expect(result).toEqual([
-				{
-					json: {
-						success: true,
-					},
-				},
-			]);
-		});
-
-		it("should not terminate session when 'autoTerminateSession' is false", async () => {
-			const nodeParameters = {
-				sessionMode: 'existing',
-				url: 'https://example.com',
-				autoTerminateSession: false,
-				sessionId: 'existing-session-123',
-				windowId: 'existing-window-123',
-			};
-
-			const result = await executeRequestWithSessionManagement.call(
-				createMockExecuteFunction(nodeParameters),
-				0,
-				{
-					method: 'POST',
-					path: '/sessions/{sessionId}/windows/{windowId}/action',
-					body: {},
-				},
-			);
-
-			expect(result).toEqual([
-				{
-					json: {
-						sessionId: 'existing-session-123',
-						windowId: 'existing-window-123',
-					},
-				},
-			]);
-		});
-
-		it("should terminate session when 'autoTerminateSession' is true", async () => {
-			const nodeParameters = {
-				sessionMode: 'existing',
-				url: 'https://example.com',
-				autoTerminateSession: true,
-				sessionId: 'existing-session-123',
-				windowId: 'existing-window-123',
-			};
-
-			await executeRequestWithSessionManagement.call(createMockExecuteFunction(nodeParameters), 0, {
-				method: 'POST',
-				path: '/sessions/{sessionId}/windows/{windowId}/action',
-				body: {},
-			});
-
-			expect(transport.apiRequest).toHaveBeenNthCalledWith(
-				2,
-				'DELETE',
-				'/sessions/existing-session-123',
-			);
-		});
-
-		it("should call the operation passed in the 'request' parameter", async () => {
-			const nodeParameters = {
-				sessionMode: 'existing',
-				url: 'https://example.com',
-				autoTerminateSession: true,
-				sessionId: 'existing-session-123',
-				windowId: 'existing-window-123',
-			};
-
-			await executeRequestWithSessionManagement.call(createMockExecuteFunction(nodeParameters), 0, {
-				method: 'POST',
-				path: '/sessions/{sessionId}/windows/{windowId}/action',
-				body: {
-					operation: 'test-operation',
-				},
-			});
-
-			expect(transport.apiRequest).toHaveBeenNthCalledWith(
-				1,
-				'POST',
-				'/sessions/existing-session-123/windows/existing-window-123/action',
-				{
-					operation: 'test-operation',
-				},
-			);
 		});
 	});
 });

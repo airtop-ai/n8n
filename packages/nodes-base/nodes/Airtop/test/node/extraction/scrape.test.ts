@@ -124,14 +124,16 @@ describe('Test Airtop, scrape operation', () => {
 			...baseNodeParameters,
 			sessionMode: 'new',
 			url: 'https://example.com',
+			autoTerminateSession: true,
 		};
 
 		const result = await scrape.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
 		expect(GenericFunctions.shouldCreateNewSession).toHaveBeenCalledTimes(1);
 		expect(GenericFunctions.createSessionAndWindow).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith(
+		expect(transport.apiRequest).toHaveBeenCalledTimes(2); // One for scrape, one for session deletion
+		expect(transport.apiRequest).toHaveBeenNthCalledWith(
+			1,
 			'POST',
 			'/sessions/new-session-456/windows/new-win-456/scrape-content',
 			{},
@@ -140,8 +142,6 @@ describe('Test Airtop, scrape operation', () => {
 		expect(result).toEqual([
 			{
 				json: {
-					sessionId: 'new-session-456',
-					windowId: 'new-win-456',
 					data: mockResponse.data,
 				},
 			},

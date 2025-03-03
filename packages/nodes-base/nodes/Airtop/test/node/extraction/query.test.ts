@@ -70,7 +70,7 @@ describe('Test Airtop, query page operation', () => {
 		jest.clearAllMocks();
 	});
 
-	it('should query page with minimal parameters using existing session', async () => {
+	it('should query the page with minimal parameters using existing session', async () => {
 		const nodeParameters = {
 			...baseNodeParameters,
 			prompt: 'How many products are on the page and what is their price range?',
@@ -101,7 +101,7 @@ describe('Test Airtop, query page operation', () => {
 		]);
 	});
 
-	it('should query page with output schema using existing session', async () => {
+	it('should query the page with output schema using existing session', async () => {
 		const nodeParameters = {
 			...baseNodeParameters,
 			prompt: 'How many products are on the page and what is their price range?',
@@ -137,20 +137,22 @@ describe('Test Airtop, query page operation', () => {
 		]);
 	});
 
-	it('should query page using a new session', async () => {
+	it('should query the page using a new session', async () => {
 		const nodeParameters = {
 			...baseNodeParameters,
 			sessionMode: 'new',
 			url: 'https://example.com',
 			prompt: 'How many products are on the page and what is their price range?',
+			autoTerminateSession: true,
 		};
 
 		const result = await query.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
 		expect(GenericFunctions.shouldCreateNewSession).toHaveBeenCalledTimes(1);
 		expect(GenericFunctions.createSessionAndWindow).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledTimes(1); // One for query, one for session deletion
-		expect(transport.apiRequest).toHaveBeenCalledWith(
+		expect(transport.apiRequest).toHaveBeenCalledTimes(2); // One for query, one for session deletion
+		expect(transport.apiRequest).toHaveBeenNthCalledWith(
+			1,
 			'POST',
 			'/sessions/new-session-456/windows/new-win-456/page-query',
 			{
@@ -162,8 +164,6 @@ describe('Test Airtop, query page operation', () => {
 		expect(result).toEqual([
 			{
 				json: {
-					sessionId: 'new-session-456',
-					windowId: 'new-win-456',
 					data: mockResponse.data,
 				},
 			},

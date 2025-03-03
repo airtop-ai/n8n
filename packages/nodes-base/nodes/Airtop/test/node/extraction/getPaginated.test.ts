@@ -1,3 +1,4 @@
+import type { IExecuteFunctions } from 'n8n-workflow';
 import nock from 'nock';
 
 import * as getPaginated from '../../../actions/extraction/getPaginated.operation';
@@ -12,6 +13,7 @@ const baseNodeParameters = {
 	sessionId: 'test-session-123',
 	windowId: 'win-123',
 	sessionMode: 'existing',
+	additionalFields: {},
 };
 
 const mockResponse = {
@@ -54,8 +56,11 @@ jest.mock('../../../GenericFunctions', () => {
 				windowId: 'new-window-123',
 			};
 		}),
-		shouldCreateNewSession: jest.fn().mockImplementation(function (this: any, index: number) {
-			const sessionMode = this.getNodeParameter('sessionMode', index);
+		shouldCreateNewSession: jest.fn().mockImplementation(function (
+			this: IExecuteFunctions,
+			index: number,
+		) {
+			const sessionMode = this.getNodeParameter('sessionMode', index) as string;
 			return sessionMode === 'new';
 		}),
 		validateAirtopApiResponse: jest.fn(),
@@ -144,10 +149,83 @@ describe('Test Airtop, getPaginated operation', () => {
 		]);
 	});
 
-	it("should extract data creating a new session with 'sessionMode' equals 'new'", async () => {
+	['auto', 'accurate', 'cost-efficient'].forEach((interactionMode) => {
+		it(`interactionMode > Should extract data with '${interactionMode}' mode`, async () => {
+			const nodeParameters = {
+				...baseNodeParameters,
+				prompt: 'Extract all product titles and prices',
+				additionalFields: {
+					interactionMode,
+				},
+			};
+
+			const result = await getPaginated.execute.call(createMockExecuteFunction(nodeParameters), 0);
+
+			expect(transport.apiRequest).toHaveBeenCalledTimes(1);
+			expect(transport.apiRequest).toHaveBeenCalledWith(
+				'POST',
+				'/sessions/test-session-123/windows/win-123/paginated-extraction',
+				{
+					prompt: 'Extract all product titles and prices',
+					configuration: {
+						interactionMode,
+					},
+				},
+			);
+
+			expect(result).toEqual([
+				{
+					json: {
+						sessionId: 'test-session-123',
+						windowId: 'win-123',
+						data: mockResponse.data,
+					},
+				},
+			]);
+		});
+	});
+
+	['auto', 'paginated', 'infinite-scroll'].forEach((paginationMode) => {
+		it(`paginationMode > Should extract data with '${paginationMode}' mode`, async () => {
+			const nodeParameters = {
+				...baseNodeParameters,
+				prompt: 'Extract all product titles and prices',
+				additionalFields: {
+					paginationMode,
+				},
+			};
+
+			const result = await getPaginated.execute.call(createMockExecuteFunction(nodeParameters), 0);
+
+			expect(transport.apiRequest).toHaveBeenCalledTimes(1);
+			expect(transport.apiRequest).toHaveBeenCalledWith(
+				'POST',
+				'/sessions/test-session-123/windows/win-123/paginated-extraction',
+				{
+					prompt: 'Extract all product titles and prices',
+					configuration: {
+						paginationMode,
+					},
+				},
+			);
+
+			expect(result).toEqual([
+				{
+					json: {
+						sessionId: 'test-session-123',
+						windowId: 'win-123',
+						data: mockResponse.data,
+					},
+				},
+			]);
+		});
+	});
+
+	it('should extract data using a new session', async () => {
 		const nodeParameters = {
 			...baseNodeParameters,
 			sessionMode: 'new',
+			autoTerminateSession: true,
 			url: 'https://example.com',
 			prompt: 'Extract all product titles and prices',
 		};
@@ -156,8 +234,9 @@ describe('Test Airtop, getPaginated operation', () => {
 
 		expect(GenericFunctions.shouldCreateNewSession).toHaveBeenCalledTimes(1);
 		expect(GenericFunctions.createSessionAndWindow).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith(
+		expect(transport.apiRequest).toHaveBeenCalledTimes(2); // One for extraction, one for session deletion
+		expect(transport.apiRequest).toHaveBeenNthCalledWith(
+			1,
 			'POST',
 			'/sessions/new-session-123/windows/new-window-123/paginated-extraction',
 			{
@@ -169,15 +248,13 @@ describe('Test Airtop, getPaginated operation', () => {
 		expect(result).toEqual([
 			{
 				json: {
-					sessionId: 'new-session-123',
-					windowId: 'new-window-123',
 					data: mockResponse.data,
 				},
 			},
 		]);
 	});
 
-	it("should throw error when 'sessionId' is empty in 'existing' session mode", async () => {
+	it("should throw error when 'sessionId' is empty and session mode is 'existing'", async () => {
 		const nodeParameters = {
 			...baseNodeParameters,
 			sessionId: '',
@@ -189,7 +266,7 @@ describe('Test Airtop, getPaginated operation', () => {
 		).rejects.toThrow(ERROR_MESSAGES.SESSION_ID_REQUIRED);
 	});
 
-	it("should throw error when 'windowId' is empty in 'existing' session mode", async () => {
+	it("should throw error when 'windowId' is empty and session mode is 'existing'", async () => {
 		const nodeParameters = {
 			...baseNodeParameters,
 			windowId: '',
