@@ -35,7 +35,7 @@ export const description: INodeProperties[] = [
 				name: 'Smart Scrape',
 				value: 'scrape',
 				description: 'Scrape a page and return the data as markdown',
-				action: 'Scrape page',
+				action: 'Smart scrape page',
 			},
 		],
 		default: 'getPaginated',
