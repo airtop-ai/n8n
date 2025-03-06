@@ -253,7 +253,7 @@ export function validateAirtopApiResponse(node: INode, response: IAirtopResponse
 
 /**
  * Convert a screenshot from the API response to a binary buffer
- * @param screenshots - The screenshots from the API response
+ * @param screenshot - The screenshot from the API response
  * @returns The processed screenshot
  */
 export function convertScreenshotToBinary(screenshot: { dataUrl: string }): Buffer {

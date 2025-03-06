@@ -19,7 +19,7 @@ import { urlField } from '../common/fields';
 export const description: INodeProperties[] = [
 	{
 		...urlField,
-		description: 'Initial URL to load in the window. Defaults to http://google.com.',
+		description: 'Initial URL to load in the window. Defaults to https://www.google.com',
 		displayOptions: {
 			show: {
 				resource: ['window'],

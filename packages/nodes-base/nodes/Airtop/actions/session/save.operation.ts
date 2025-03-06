@@ -48,7 +48,7 @@ export const description: INodeProperties[] = [
 				operation: ['save'],
 			},
 		},
-		hint: 'Name of the profile you want to save. Must consist only of alphanumeric characters and hyphen "-"',
+		hint: 'Name of the profile you want to save. Must consist only of alphanumeric characters and hyphens "-"',
 	},
 ];
 

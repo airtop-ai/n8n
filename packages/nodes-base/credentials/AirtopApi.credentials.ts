@@ -25,7 +25,7 @@ export class AirtopApi implements ICredentialType {
 				password: true,
 			},
 			noDataExpression: true,
-			hint: "Don't have an Airtop account? <a href='https://portal.airtop.ai' target='_blank'>Sign up</a> and start for free.",
+			hint: "Don't have an Airtop account? <a href='https://portal.airtop.ai/sign-up' target='_blank'>Sign up</a> and start for free.",
 		},
 	];
 

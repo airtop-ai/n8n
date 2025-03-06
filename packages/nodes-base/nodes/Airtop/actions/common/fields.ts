@@ -87,12 +87,12 @@ export const elementDescriptionField: INodeProperties = {
 export function getSessionModeFields(resource: string, operations: string[]): INodeProperties[] {
 	return [
 		{
-			displayName: 'Mode',
+			displayName: 'Session Mode',
 			name: 'sessionMode',
 			type: 'options',
 			default: 'existing',
 			description: 'Choose between creating a new session or using an existing one',
-			hint: "Manually creating a session requires that you use the 'Create session/window' operations before. This provides you with more advanced configuration options, but is slightly more verbose to use.",
+			hint: "Manually creating a session requires that you use the 'Create a session' and 'Create a window' operations before this operation. This provides you with more advanced configuration options, but is slightly more verbose to use.",
 			options: [
 				{
 					name: 'Automatically Create Session',
@@ -141,7 +141,7 @@ export function getSessionModeFields(resource: string, operations: string[]): IN
 		{
 			...profileNameField,
 			hint: `Name of the profile to load into the session.
-				Must consist only of alphanumeric characters and hyphen "-".
+				Must consist only of alphanumeric characters and hyphens "-".
 				You can create a profile <a href="https://portal.airtop.ai/browser-profiles" target="_blank" >here</a>.
 				Note, in order to save data into a profile, you must first call the 'Save Profile on Termination' operation before you terminate the session.`,
 			displayOptions: {
