@@ -1,5 +1,6 @@
-export const BASE_URL = 'https://api.airtop.ai/api/v1';
-export const INTEGRATION_URL = 'https://portal-api.airtop.ai/integrations/v1/no-code';
+export const BASE_URL = process.env.AIRTOP_BASE_URL || 'https://api.airtop.ai/api/v1';
+export const INTEGRATION_URL =
+	process.env.AIRTOP_INTEGRATION_URL || 'https://portal-api.airtop.ai/integrations/v1/no-code';
 
 export const DEFAULT_TIMEOUT_MINUTES = 10;
 export const MIN_TIMEOUT_MINUTES = 1;
@@ -11,6 +12,7 @@ export const ERROR_MESSAGES = {
 	URL_REQUIRED: "Please fill the 'URL' parameter",
 	PROFILE_NAME_INVALID: "'Profile Name' should only contain letters, numbers and dashes",
 	TIMEOUT_MINUTES_INVALID: `Timeout must be between ${MIN_TIMEOUT_MINUTES} and ${MAX_TIMEOUT_MINUTES} minutes`,
+	TIMEOUT_REACHED: 'Timeout reached while waiting for the operation to complete',
 	URL_INVALID: "'URL' must start with 'http' or 'https'",
 	PROFILE_NAME_REQUIRED: "'Profile Name' is required when 'Save Profile' is enabled",
 	REQUIRED_PARAMETER: "Please fill the '{{field}}' parameter",
