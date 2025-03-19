@@ -2,6 +2,7 @@ import * as create from '../../../actions/session/create.operation';
 import { ERROR_MESSAGES } from '../../../constants';
 import * as transport from '../../../transport';
 import { createMockExecuteFunction } from '../helpers';
+import { INTEGRATION_URL } from '../../../constants';
 
 jest.mock('../../../transport', () => {
 	const originalModule = jest.requireActual<typeof transport>('../../../transport');
@@ -38,17 +39,13 @@ describe('Test Airtop, session create operation', () => {
 		const result = await create.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
 		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith(
-			'POST',
-			'https://portal-api.airtop.ai/integrations/v1/no-code/create-session',
-			{
-				configuration: {
-					profileName: 'test-profile',
-					timeoutMinutes: 10,
-					proxy: false,
-				},
+		expect(transport.apiRequest).toHaveBeenCalledWith('POST', `${INTEGRATION_URL}/create-session`, {
+			configuration: {
+				profileName: 'test-profile',
+				timeoutMinutes: 10,
+				proxy: false,
 			},
-		);
+		});
 
 		expect(result).toEqual([
 			{
@@ -75,7 +72,7 @@ describe('Test Airtop, session create operation', () => {
 		expect(transport.apiRequest).toHaveBeenNthCalledWith(
 			1,
 			'POST',
-			'https://portal-api.airtop.ai/integrations/v1/no-code/create-session',
+			`${INTEGRATION_URL}/create-session`,
 			{
 				configuration: {
 					profileName: 'test-profile',
@@ -112,17 +109,13 @@ describe('Test Airtop, session create operation', () => {
 		const result = await create.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
 		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith(
-			'POST',
-			'https://portal-api.airtop.ai/integrations/v1/no-code/create-session',
-			{
-				configuration: {
-					profileName: 'test-profile',
-					timeoutMinutes: 10,
-					proxy: true,
-				},
+		expect(transport.apiRequest).toHaveBeenCalledWith('POST', `${INTEGRATION_URL}/create-session`, {
+			configuration: {
+				profileName: 'test-profile',
+				timeoutMinutes: 10,
+				proxy: true,
 			},
-		);
+		});
 
 		expect(result).toEqual([
 			{
@@ -147,17 +140,13 @@ describe('Test Airtop, session create operation', () => {
 		const result = await create.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
 		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith(
-			'POST',
-			'https://portal-api.airtop.ai/integrations/v1/no-code/create-session',
-			{
-				configuration: {
-					profileName: 'test-profile',
-					timeoutMinutes: 10,
-					proxy: 'http://proxy.example.com:8080',
-				},
+		expect(transport.apiRequest).toHaveBeenCalledWith('POST', `${INTEGRATION_URL}/create-session`, {
+			configuration: {
+				profileName: 'test-profile',
+				timeoutMinutes: 10,
+				proxy: 'http://proxy.example.com:8080',
 			},
-		);
+		});
 
 		expect(result).toEqual([
 			{
