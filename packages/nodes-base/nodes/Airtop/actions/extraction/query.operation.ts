@@ -42,6 +42,13 @@ export const description: INodeProperties[] = [
 			{
 				...outputSchemaField,
 			},
+			{
+				displayName: 'Include Visual Analysis',
+				name: 'includeVisualAnalysis',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to include visual analysis of the page',
+			},
 		],
 	},
 ];
@@ -51,7 +58,12 @@ export async function execute(
 	index: number,
 ): Promise<INodeExecutionData[]> {
 	const prompt = this.getNodeParameter('prompt', index, '') as string;
-	const additionalFields = this.getNodeParameter('additionalFields', index);
+	const additionalFields = this.getNodeParameter('additionalFields', index, {});
+	const outputSchema = additionalFields.outputSchema;
+	const includeVA = additionalFields.includeVisualAnalysis;
+	const experimental = {
+		includeVisualAnalysis: includeVA ? 'enabled' : 'disabled',
+	};
 
 	return await executeRequestWithSessionManagement.call(this, index, {
 		method: 'POST',
@@ -59,7 +71,8 @@ export async function execute(
 		body: {
 			prompt,
 			configuration: {
-				...additionalFields,
+				...(outputSchema ? { outputSchema } : {}),
+				...(includeVA ? { experimental } : {}),
 			},
 		},
 	});
