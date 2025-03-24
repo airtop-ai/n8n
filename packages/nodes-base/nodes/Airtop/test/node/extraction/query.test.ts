@@ -86,7 +86,11 @@ describe('Test Airtop, query page operation', () => {
 			'/sessions/test-session-123/windows/win-123/page-query',
 			{
 				prompt: 'How many products are on the page and what is their price range?',
-				configuration: {},
+				configuration: {
+					experimental: {
+						includeVisualAnalysis: 'disabled',
+					},
+				},
 			},
 		);
 
@@ -122,6 +126,9 @@ describe('Test Airtop, query page operation', () => {
 				prompt: 'How many products are on the page and what is their price range?',
 				configuration: {
 					outputSchema: mockJsonSchema,
+					experimental: {
+						includeVisualAnalysis: 'disabled',
+					},
 				},
 			},
 		);
@@ -157,7 +164,11 @@ describe('Test Airtop, query page operation', () => {
 			'/sessions/new-session-456/windows/new-win-456/page-query',
 			{
 				prompt: 'How many products are on the page and what is their price range?',
-				configuration: {},
+				configuration: {
+					experimental: {
+						includeVisualAnalysis: 'disabled',
+					},
+				},
 			},
 		);
 
@@ -251,7 +262,11 @@ describe('Test Airtop, query page operation', () => {
 			'/sessions/test-session-123/windows/win-123/page-query',
 			{
 				prompt: 'How many products are on the page and what is their price range?',
-				configuration: {},
+				configuration: {
+					experimental: {
+						includeVisualAnalysis: 'disabled',
+					},
+				},
 			},
 		);
 
