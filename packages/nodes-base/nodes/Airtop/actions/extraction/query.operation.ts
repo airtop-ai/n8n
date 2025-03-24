@@ -47,7 +47,7 @@ export const description: INodeProperties[] = [
 				name: 'includeVisualAnalysis',
 				type: 'boolean',
 				default: false,
-				description: 'Whether to include visual analysis of the page',
+				description: 'Whether to analyze the web page visually when fulfilling the request',
 			},
 		],
 	},
@@ -60,10 +60,7 @@ export async function execute(
 	const prompt = this.getNodeParameter('prompt', index, '') as string;
 	const additionalFields = this.getNodeParameter('additionalFields', index, {});
 	const outputSchema = additionalFields.outputSchema;
-	const includeVA = additionalFields.includeVisualAnalysis;
-	const experimental = {
-		includeVisualAnalysis: includeVA ? 'enabled' : 'disabled',
-	};
+	const includeVisualAnalysis = additionalFields.includeVisualAnalysis;
 
 	return await executeRequestWithSessionManagement.call(this, index, {
 		method: 'POST',
@@ -71,8 +68,10 @@ export async function execute(
 		body: {
 			prompt,
 			configuration: {
+				experimental: {
+					includeVisualAnalysis: includeVisualAnalysis ? 'enabled' : 'disabled',
+				},
 				...(outputSchema ? { outputSchema } : {}),
-				...(includeVA ? { experimental } : {}),
 			},
 		},
 	});
