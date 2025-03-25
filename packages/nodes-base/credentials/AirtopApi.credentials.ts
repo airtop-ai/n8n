@@ -5,6 +5,8 @@ import type {
 	INodeProperties,
 } from 'n8n-workflow';
 
+import { BASE_URL } from '../nodes/Airtop/constants';
+
 export class AirtopApi implements ICredentialType {
 	name = 'airtopApi';
 
@@ -42,7 +44,7 @@ export class AirtopApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			method: 'GET',
-			baseURL: 'https://api.airtop.ai/api/v1',
+			baseURL: BASE_URL,
 			url: '/sessions',
 			qs: {
 				limit: 10,
