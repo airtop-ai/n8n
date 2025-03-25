@@ -2,9 +2,13 @@ export const BASE_URL = process.env.AIRTOP_BASE_URL || 'https://api.airtop.ai/ap
 export const INTEGRATION_URL =
 	process.env.AIRTOP_INTEGRATION_URL || 'https://portal-api.airtop.ai/integrations/v1/no-code';
 
+// Create operation
 export const DEFAULT_TIMEOUT_MINUTES = 10;
 export const MIN_TIMEOUT_MINUTES = 1;
 export const MAX_TIMEOUT_MINUTES = 10080;
+
+// Fill form operation
+export const FILL_FORM_TIMEOUT = 5000; // 5 mins
 
 export const ERROR_MESSAGES = {
 	SESSION_ID_REQUIRED: "Please fill the 'Session ID' parameter",

@@ -9,7 +9,6 @@ const baseNodeParameters = {
 	sessionId: 'test-session-123',
 	windowId: 'win-123',
 	formData: 'Name: John Doe, Email: john@example.com',
-	timeout: 30,
 };
 
 const mockAsyncResponse = {
@@ -33,7 +32,7 @@ jest.mock('../../../transport', () => {
 	};
 });
 
-describe('Test Airtop, fill operation', () => {
+describe('Test Airtop, fill form operation', () => {
 	afterAll(() => {
 		jest.unmock('../../../transport');
 	});
@@ -94,23 +93,23 @@ describe('Test Airtop, fill operation', () => {
 		);
 	});
 
-	it('should throw error when operation times out', async () => {
+	it('should throw error when operation times out after 2 sec', async () => {
 		const apiRequestMock = transport.apiRequest as jest.Mock;
 		const nodeParameters = {
 			...baseNodeParameters,
-			timeout: 2,
 		};
+		const timeout = 2000;
 
 		// Mock the initial async request
 		apiRequestMock.mockResolvedValueOnce(mockAsyncResponse);
 
-		// Mock multiple status checks to return pending
+		// Return pending on all requests
 		apiRequestMock.mockResolvedValue({ ...mockAsyncResponse });
 
 		// should throw NodeApiError
-		await expect(fill.execute.call(createMockExecuteFunction(nodeParameters), 0)).rejects.toThrow(
-			'The service was not able to process your request',
-		);
+		await expect(
+			fill.execute.call(createMockExecuteFunction(nodeParameters), 0, timeout),
+		).rejects.toThrow('The service was not able to process your request');
 	});
 
 	it('should handle error status in response', async () => {

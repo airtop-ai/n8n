@@ -5,14 +5,14 @@ import {
 	NodeApiError,
 } from 'n8n-workflow';
 
+import { ERROR_MESSAGES, FILL_FORM_TIMEOUT } from '../../constants';
 import {
 	validateRequiredStringField,
 	validateSessionAndWindowId,
 	validateAirtopApiResponse,
 } from '../../GenericFunctions';
 import { apiRequest } from '../../transport';
-import { IAirtopResponse } from '../../transport/types';
-import { ERROR_MESSAGES } from '../../constants';
+import type { IAirtopResponse } from '../../transport/types';
 
 export const description: INodeProperties[] = [
 	{
@@ -33,33 +33,17 @@ export const description: INodeProperties[] = [
 		description: 'The information to fill into the form written in natural language',
 		hint: 'e.g. "Name: John Doe, Email: john.doe@example.com, Phone: +1234567890"',
 	},
-	{
-		displayName: 'Timeout',
-		name: 'timeout',
-		type: 'number',
-		typeOptions: {
-			minValue: 1,
-			maxValue: 180,
-		},
-		default: 30,
-		description: 'The timeout in seconds for the operation to complete',
-		displayOptions: {
-			show: {
-				resource: ['interaction'],
-				operation: ['fill'],
-			},
-		},
-	},
 ];
 
 export async function execute(
 	this: IExecuteFunctions,
 	index: number,
+	timeout = FILL_FORM_TIMEOUT,
 ): Promise<INodeExecutionData[]> {
 	const { sessionId, windowId } = validateSessionAndWindowId.call(this, index);
 	const formData = validateRequiredStringField.call(this, index, 'formData', 'Form Data');
-	const timeout = this.getNodeParameter('timeout', index, 1) as number;
 
+	// run automation
 	const asyncAutomationResponse = await apiRequest.call(
 		this,
 		'POST',
@@ -72,12 +56,11 @@ export async function execute(
 		},
 	);
 
-	const reqId = asyncAutomationResponse.requestId;
-	let automationStatusResponse: IAirtopResponse;
+	const reqId = asyncAutomationResponse.requestId as string;
 
 	// Poll status every second until it's completed or timeout is reached
-	const timeoutMs = timeout * 1000;
 	const startTime = Date.now();
+	let automationStatusResponse: IAirtopResponse;
 
 	while (true) {
 		automationStatusResponse = await apiRequest.call(this, 'GET', `/requests/${reqId}/status`);
@@ -90,7 +73,7 @@ export async function execute(
 		}
 
 		const elapsedTime = Date.now() - startTime;
-		if (elapsedTime >= timeoutMs) {
+		if (elapsedTime >= timeout) {
 			throw new NodeApiError(this.getNode(), {
 				message: ERROR_MESSAGES.TIMEOUT_REACHED,
 				code: 500,
