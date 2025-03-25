@@ -1,4 +1,4 @@
-import { NodeApiError, type IExecuteFunctions, type INode } from 'n8n-workflow';
+import { NodeApiError, type IDataObject, type IExecuteFunctions, type INode } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
 import { SESSION_MODE } from './actions/common/fields';
@@ -7,7 +7,7 @@ import {
 	DEFAULT_TIMEOUT_MINUTES,
 	MIN_TIMEOUT_MINUTES,
 	MAX_TIMEOUT_MINUTES,
-	INTEGRATION_URL,
+	CREATE_SESSION_TIMEOUT,
 } from './constants';
 import { apiRequest } from './transport';
 import type { IAirtopResponse } from './transport/types';
@@ -273,6 +273,42 @@ export function shouldCreateNewSession(this: IExecuteFunctions, index: number) {
 	return Boolean(sessionMode && sessionMode === SESSION_MODE.NEW);
 }
 
+export async function createSession(
+	this: IExecuteFunctions,
+	parameters: IDataObject,
+	operationTimeout = CREATE_SESSION_TIMEOUT,
+): Promise<{ sessionId: string }> {
+	const createSessionResponse = await apiRequest.call(this, 'POST', '/sessions', parameters);
+	const sessionId = createSessionResponse.data?.id as string;
+
+	// poll session status until it's ready or timeout is reached
+	const startTime = Date.now();
+	let sessionStatusResponse: IAirtopResponse;
+
+	while (true) {
+		sessionStatusResponse = await apiRequest.call(this, 'GET', `/sessions/${sessionId}`);
+		const status = sessionStatusResponse.data.status as string;
+
+		if (status === 'running') {
+			break;
+		}
+
+		const elapsedTime = Date.now() - startTime;
+		if (elapsedTime >= operationTimeout) {
+			throw new NodeApiError(this.getNode(), {
+				message: ERROR_MESSAGES.TIMEOUT_REACHED,
+				code: 500,
+			});
+		}
+
+		// wait for 1 second before polling again
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+	}
+
+	validateAirtopApiResponse(this.getNode(), sessionStatusResponse);
+	return { sessionId };
+}
+
 /**
  * Create a new session and window
  * @param this - The execution context
@@ -284,11 +320,10 @@ export async function createSessionAndWindow(
 	index: number,
 ): Promise<{ sessionId: string; windowId: string }> {
 	const node = this.getNode();
-	const noCodeEndpoint = `${INTEGRATION_URL}/create-session`;
 	const profileName = validateProfileName.call(this, index);
 	const url = validateRequiredStringField.call(this, index, 'url', 'URL');
 
-	const { sessionId } = await apiRequest.call(this, 'POST', noCodeEndpoint, {
+	const { sessionId } = await createSession.call(this, {
 		configuration: {
 			profileName,
 		},

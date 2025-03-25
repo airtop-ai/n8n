@@ -5,9 +5,9 @@ import {
 	type INodeProperties,
 } from 'n8n-workflow';
 
-import { INTEGRATION_URL } from '../../constants';
+import { CREATE_SESSION_TIMEOUT } from '../../constants';
 import {
-	validateAirtopApiResponse,
+	createSession,
 	validateProfileName,
 	validateProxyUrl,
 	validateSaveProfileOnTermination,
@@ -101,9 +101,9 @@ export const description: INodeProperties[] = [
 export async function execute(
 	this: IExecuteFunctions,
 	index: number,
+	operationTimeout = CREATE_SESSION_TIMEOUT,
 ): Promise<INodeExecutionData[]> {
-	const url = `${INTEGRATION_URL}/create-session`;
-
+	// validate parameters
 	const profileName = validateProfileName.call(this, index);
 	const timeoutMinutes = validateTimeoutMinutes.call(this, index);
 	const saveProfileOnTermination = validateSaveProfileOnTermination.call(this, index, profileName);
@@ -118,11 +118,8 @@ export async function execute(
 		},
 	};
 
-	const response = await apiRequest.call(this, 'POST', url, body);
-	const sessionId = response.sessionId;
-
-	// validate response
-	validateAirtopApiResponse(this.getNode(), response);
+	// request session creation
+	const { sessionId } = await createSession.call(this, body, operationTimeout);
 
 	if (saveProfileOnTermination) {
 		await apiRequest.call(
