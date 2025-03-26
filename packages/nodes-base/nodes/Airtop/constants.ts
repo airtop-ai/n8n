@@ -8,7 +8,7 @@ export const MIN_TIMEOUT_MINUTES = 1;
 export const MAX_TIMEOUT_MINUTES = 10080;
 
 // Fill form operation
-export const FILL_FORM_TIMEOUT = 5000; // 5 mins
+export const FILL_FORM_TIMEOUT = 5 * 60 * 1000; // 5 mins
 
 export const ERROR_MESSAGES = {
 	SESSION_ID_REQUIRED: "Please fill the 'Session ID' parameter",
