@@ -1,8 +1,7 @@
 import * as create from '../../../actions/session/create.operation';
-import { ERROR_MESSAGES } from '../../../constants';
+import { ERROR_MESSAGES, INTEGRATION_URL } from '../../../constants';
 import * as transport from '../../../transport';
 import { createMockExecuteFunction } from '../helpers';
-import { INTEGRATION_URL } from '../../../constants';
 
 jest.mock('../../../transport', () => {
 	const originalModule = jest.requireActual<typeof transport>('../../../transport');
