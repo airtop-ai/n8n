@@ -43,7 +43,6 @@ export const description: INodeProperties[] = [
 	},
 	{
 		...elementDescriptionField,
-		placeholder: 'the search box',
 		displayOptions: {
 			show: {
 				resource: ['interaction'],
