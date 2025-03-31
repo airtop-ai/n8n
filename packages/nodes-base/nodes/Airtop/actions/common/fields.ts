@@ -131,10 +131,6 @@ export function getSessionModeFields(resource: string, operations: string[]): IN
 		},
 		{
 			...profileNameField,
-			hint: `Name of the profile to load into the session.
-				Must consist only of alphanumeric characters and hyphens "-".
-				You can create a profile <a href="https://portal.airtop.ai/browser-profiles" target="_blank" >here</a>.
-				Note, in order to save data into a profile, you must first call the 'Save Profile on Termination' operation before you terminate the session.`,
 			displayOptions: {
 				show: {
 					resource: [resource],
@@ -147,7 +143,8 @@ export function getSessionModeFields(resource: string, operations: string[]): IN
 			name: 'autoTerminateSession',
 			type: 'boolean',
 			default: true,
-			description: 'Whether to terminate the session after the operation is complete',
+			description:
+				'Whether to terminate the session after the operation is complete. When disabled, you must manually terminate the session. By default, idle sessions timeout after 10 minutes',
 			displayOptions: {
 				show: {
 					resource: [resource],

@@ -51,6 +51,8 @@ export const description: INodeProperties[] = [
 			'Whether to include the navigation bar in the Live View. When enabled, the navigation bar will be visible allowing you to navigate between pages.',
 		displayOptions: {
 			show: {
+				resource: ['window'],
+				operation: ['create'],
 				getLiveView: [true],
 			},
 		},
@@ -65,6 +67,8 @@ export const description: INodeProperties[] = [
 		placeholder: 'e.g. 1280x720',
 		displayOptions: {
 			show: {
+				resource: ['window'],
+				operation: ['create'],
 				getLiveView: [true],
 			},
 		},
@@ -77,6 +81,8 @@ export const description: INodeProperties[] = [
 		description: 'Whether to disable the window from being resized in the Live View',
 		displayOptions: {
 			show: {
+				resource: ['window'],
+				operation: ['create'],
 				getLiveView: [true],
 			},
 		},

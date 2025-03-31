@@ -24,6 +24,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 		description: 'The prompt to extract data from the pages',
+		placeholder: 'e.g. Extract all the product names and prices',
 	},
 	{
 		displayName: 'Additional Fields',
@@ -74,7 +75,7 @@ export const description: INodeProperties[] = [
 				options: [
 					{
 						name: 'Auto',
-						description: 'Look for pagination links first, then tries infinite scrolling',
+						description: 'Look for pagination links first, then try infinite scrolling',
 						value: 'auto',
 					},
 					{

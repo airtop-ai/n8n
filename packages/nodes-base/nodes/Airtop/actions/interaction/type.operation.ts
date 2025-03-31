@@ -27,6 +27,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 		description: 'The text to type into the browser window',
+		placeholder: 'e.g. email@example.com',
 	},
 	{
 		displayName: 'Press Enter Key',
