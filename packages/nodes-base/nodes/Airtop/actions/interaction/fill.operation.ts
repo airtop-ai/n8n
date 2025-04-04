@@ -31,7 +31,7 @@ export const description: INodeProperties[] = [
 			},
 		},
 		description: 'The information to fill into the form written in natural language',
-		hint: 'e.g. "Name: John Doe, Email: john.doe@example.com, Phone: +1234567890"',
+		placeholder: 'e.g. "Name: John Doe, Email: john.doe@example.com"',
 	},
 ];
 
