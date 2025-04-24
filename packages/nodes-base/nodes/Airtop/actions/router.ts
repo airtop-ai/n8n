@@ -1,15 +1,19 @@
-import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
+import { cleanOutputForToolUse } from './common/output.utils';
 import * as extraction from './extraction/Extraction.resource';
 import * as interaction from './interaction/Interaction.resource';
 import type { AirtopType } from './node.type';
 import * as session from './session/Session.resource';
 import * as window from './window/Window.resource';
+import type { IAirtopNodeExecutionData } from '../transport/types';
 
 export async function router(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 	const operationResult: INodeExecutionData[] = [];
-	let responseData: IDataObject | IDataObject[] = [];
+	let responseData: IAirtopNodeExecutionData[] = [];
+	const nodeType = this.getNode().type;
+	const isCalledAsTool = nodeType.includes('airtopTool');
 
 	const items = this.getInputData();
 	const resource = this.getNodeParameter<AirtopType>('resource', 0);
@@ -31,9 +35,11 @@ export async function router(this: IExecuteFunctions): Promise<INodeExecutionDat
 					break;
 				case 'interaction':
 					responseData = await interaction[airtopNodeData.operation].execute.call(this, i);
+					responseData = isCalledAsTool ? cleanOutputForToolUse(responseData) : responseData;
 					break;
 				case 'extraction':
 					responseData = await extraction[airtopNodeData.operation].execute.call(this, i);
+					responseData = isCalledAsTool ? cleanOutputForToolUse(responseData) : responseData;
 					break;
 				default:
 					throw new NodeOperationError(
@@ -42,10 +48,10 @@ export async function router(this: IExecuteFunctions): Promise<INodeExecutionDat
 					);
 			}
 
-			const executionData = this.helpers.constructExecutionMetaData(
-				this.helpers.returnJsonArray(responseData),
-				{ itemData: { item: i } },
-			);
+			const executionData = this.helpers.constructExecutionMetaData(responseData, {
+				itemData: { item: i },
+			});
+
 			operationResult.push(...executionData);
 		} catch (error) {
 			if (this.continueOnFail()) {
