@@ -2,6 +2,7 @@ import { NodeApiError, type IExecuteFunctions, type INode } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
 import { SESSION_MODE } from './actions/common/fields';
+import type { TScrollingMode } from './constants';
 import {
 	ERROR_MESSAGES,
 	DEFAULT_TIMEOUT_MINUTES,
@@ -184,6 +185,81 @@ export function validateProxyUrl(this: IExecuteFunctions, index: number, proxy: 
 	}
 
 	return proxyUrl;
+}
+
+/**
+ * Validate the scrollBy amount parameter
+ * @param this - The execution context
+ * @param index - The index of the node
+ * @param parameterName - The name of the parameter
+ * @returns The validated scrollBy amount
+ */
+export function validateScrollByAmount(
+	this: IExecuteFunctions,
+	index: number,
+	parameterName: string,
+) {
+	// regex for percentage or pixels, accepts negative numbers
+	const regex = /^-?\d{1,3}%?|-?\d{1,3}px$/;
+	const scrollBy = this.getNodeParameter(parameterName, index, {}) as {
+		xAxis?: string;
+		yAxis?: string;
+	};
+
+	if (!scrollBy?.xAxis && !scrollBy?.yAxis) {
+		return {};
+	}
+
+	// if no value is provided, set it to 0 to avoid regex errors
+	const validParams = regex.test(scrollBy.xAxis ?? '0') || regex.test(scrollBy.yAxis ?? '0');
+
+	if (!validParams) {
+		throw new NodeOperationError(this.getNode(), ERROR_MESSAGES.SCROLL_BY_AMOUNT_INVALID, {
+			itemIndex: index,
+		});
+	}
+
+	return scrollBy;
+}
+
+/**
+ * Validate the scroll mode parameter
+ * @param this - The execution context
+ * @param index - The index of the node
+ * @returns Scroll mode
+ * @throws Error if the scroll mode or scroll parameters are invalid
+ */
+export function validateScrollingMode(this: IExecuteFunctions, index: number): TScrollingMode {
+	const scrollingMode = this.getNodeParameter(
+		'scrollingMode',
+		index,
+		'automatic',
+	) as TScrollingMode;
+
+	const scrollToEdge = this.getNodeParameter('scrollToEdge.edgeValues', index, {}) as {
+		xAxis?: string;
+		yAxis?: string;
+	};
+	const scrollBy = this.getNodeParameter('scrollBy.scrollValues', index, {}) as {
+		xAxis?: string;
+		yAxis?: string;
+	};
+
+	if (scrollingMode !== 'manual') {
+		return scrollingMode;
+	}
+
+	// validate manual scroll parameters
+	const emptyScrollBy = !scrollBy.xAxis && !scrollBy.yAxis;
+	const emptyScrollToEdge = !scrollToEdge.xAxis && !scrollToEdge.yAxis;
+
+	if (emptyScrollBy && emptyScrollToEdge) {
+		throw new NodeOperationError(this.getNode(), ERROR_MESSAGES.SCROLL_MODE_INVALID, {
+			itemIndex: index,
+		});
+	}
+
+	return scrollingMode;
 }
 
 /**

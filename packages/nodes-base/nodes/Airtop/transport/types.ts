@@ -1,16 +1,19 @@
-import type { IDataObject } from 'n8n-workflow';
+import type { IDataObject, INodeExecutionData } from 'n8n-workflow';
 
 export interface IAirtopResponse extends IDataObject {
 	sessionId?: string;
-	data: IDataObject & {
+	windowId?: string;
+	data?: {
+		windowId?: string;
 		modelResponse?: string;
 	};
-	meta: IDataObject & {
+	meta?: IDataObject & {
 		status?: string;
 		screenshots?: Array<{ dataUrl: string }>;
 	};
-	errors: IDataObject[];
-	warnings: IDataObject[];
+	errors?: IDataObject[];
+	warnings?: IDataObject[];
+	output?: IDataObject;
 }
 
 export interface IAirtopInteractionRequest extends IDataObject {
@@ -18,6 +21,18 @@ export interface IAirtopInteractionRequest extends IDataObject {
 	waitForNavigation?: boolean;
 	elementDescription?: string;
 	pressEnterKey?: boolean;
+	// scroll parameters
+	scrollToElement?: string;
+	scrollWithin?: string;
+	scrollToEdge?: {
+		xAxis?: string;
+		yAxis?: string;
+	};
+	scrollBy?: {
+		xAxis?: string;
+		yAxis?: string;
+	};
+	// configuration
 	configuration: {
 		visualAnalysis?: {
 			scope: string;
@@ -26,4 +41,8 @@ export interface IAirtopInteractionRequest extends IDataObject {
 			waitUntil: string;
 		};
 	};
+}
+
+export interface IAirtopNodeExecutionData extends INodeExecutionData {
+	json: IAirtopResponse;
 }
