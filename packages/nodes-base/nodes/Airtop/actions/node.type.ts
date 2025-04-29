@@ -5,6 +5,7 @@ type NodeMap = {
 	window: 'create' | 'close' | 'takeScreenshot' | 'load';
 	extraction: 'getPaginated' | 'query' | 'scrape';
 	interaction: 'click' | 'fill' | 'hover' | 'type';
+	file: 'getMany' | 'create' | 'get' | 'delete';
 };
 
 export type AirtopType = AllEntities<NodeMap>;

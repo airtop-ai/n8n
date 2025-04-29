@@ -6,6 +6,7 @@ export interface IAirtopResponse extends IDataObject {
 	data?: {
 		windowId?: string;
 		modelResponse?: string;
+		files?: IDataObject[];
 	};
 	meta?: IDataObject & {
 		status?: string;

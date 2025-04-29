@@ -3,6 +3,7 @@ import { NodeOperationError } from 'n8n-workflow';
 
 import { cleanOutputForToolUse } from './common/output.utils';
 import * as extraction from './extraction/Extraction.resource';
+import * as file from './file/File.resource';
 import * as interaction from './interaction/Interaction.resource';
 import type { AirtopType } from './node.type';
 import * as session from './session/Session.resource';
@@ -40,6 +41,16 @@ export async function router(this: IExecuteFunctions): Promise<INodeExecutionDat
 				case 'extraction':
 					responseData = await extraction[airtopNodeData.operation].execute.call(this, i);
 					responseData = isCalledAsTool ? cleanOutputForToolUse(responseData) : responseData;
+					break;
+				case 'file':
+					if (airtopNodeData.operation === 'getMany') {
+						responseData = await file.getMany.execute.call(this, i);
+					} else {
+						throw new NodeOperationError(
+							this.getNode(),
+							`The operation "${airtopNodeData.operation}" is not implemented for resource "${airtopNodeData.resource}"!`,
+						);
+					}
 					break;
 				default:
 					throw new NodeOperationError(
