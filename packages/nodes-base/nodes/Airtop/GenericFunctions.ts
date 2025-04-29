@@ -2,6 +2,7 @@ import { NodeApiError, type IExecuteFunctions, type INode } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
 import { SESSION_MODE } from './actions/common/fields';
+import type { TScrollingMode } from './constants';
 import {
 	ERROR_MESSAGES,
 	DEFAULT_TIMEOUT_MINUTES,
@@ -225,10 +226,16 @@ export function validateScrollByAmount(
  * Validate the scroll mode parameter
  * @param this - The execution context
  * @param index - The index of the node
- * @returns The validated scroll mode
+ * @returns Scroll mode
+ * @throws Error if the scroll mode or scroll parameters are invalid
  */
-export function validateScrollingMode(this: IExecuteFunctions, index: number) {
-	const scrollingMode = this.getNodeParameter('scrollingMode', index, 'automatic') as string;
+export function validateScrollingMode(this: IExecuteFunctions, index: number): TScrollingMode {
+	const scrollingMode = this.getNodeParameter(
+		'scrollingMode',
+		index,
+		'automatic',
+	) as TScrollingMode;
+
 	const scrollToEdge = this.getNodeParameter('scrollToEdge.edgeValues', index, {}) as {
 		xAxis?: string;
 		yAxis?: string;
@@ -242,6 +249,7 @@ export function validateScrollingMode(this: IExecuteFunctions, index: number) {
 		return scrollingMode;
 	}
 
+	// validate manual scroll parameters
 	const emptyScrollBy = !scrollBy.xAxis && !scrollBy.yAxis;
 	const emptyScrollToEdge = !scrollToEdge.xAxis && !scrollToEdge.yAxis;
 

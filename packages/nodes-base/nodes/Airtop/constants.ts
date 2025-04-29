@@ -3,11 +3,24 @@ import type { n8n } from 'n8n-core';
 import { jsonParse } from 'n8n-workflow';
 import { join, resolve } from 'path';
 
-// Get n8n version from package.json
-const PACKAGE_DIR = resolve(__dirname, '../../../');
-const packageJsonPath = join(PACKAGE_DIR, 'package.json');
-const n8nPackageJson = jsonParse<n8n.PackageJson>(readFileSync(packageJsonPath, 'utf8'));
-export const N8N_VERSION = n8nPackageJson.version;
+// Helper function to get n8n version that can be mocked in tests
+export const getN8NVersion = (): string => {
+	if (process.env.N8N_VERSION) {
+		return process.env.N8N_VERSION;
+	}
+
+	try {
+		const PACKAGE_DIR = resolve(__dirname, '../../../');
+		const packageJsonPath = join(PACKAGE_DIR, 'package.json');
+		const n8nPackageJson = jsonParse<n8n.PackageJson>(readFileSync(packageJsonPath, 'utf8'));
+		return n8nPackageJson.version;
+	} catch (error) {
+		// Fallback version
+		return '0.0.0';
+	}
+};
+
+export const N8N_VERSION = getN8NVersion();
 
 export const BASE_URL = process.env.AIRTOP_BASE_URL ?? 'https://api.airtop.ai/api/v1';
 export const INTEGRATION_URL =
@@ -21,6 +34,10 @@ export const MAX_TIMEOUT_MINUTES = 10080;
 // Fill form operation
 export const FILL_FORM_TIMEOUT = 5 * 60 * 1000; // 5 mins
 
+// Scroll operation
+export type TScrollingMode = 'manual' | 'automatic';
+
+// Error messages
 export const ERROR_MESSAGES = {
 	SESSION_ID_REQUIRED: "Please fill the 'Session ID' parameter",
 	WINDOW_ID_REQUIRED: "Please fill the 'Window ID' parameter",

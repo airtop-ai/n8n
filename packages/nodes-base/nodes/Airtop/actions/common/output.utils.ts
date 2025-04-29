@@ -7,7 +7,7 @@ import type { IAirtopNodeExecutionData, IAirtopResponse } from '../../transport/
  * Parse JSON when the 'Parse JSON Output' parameter is enabled
  * @param this - The execution context
  * @param index - The index of the node
- * @param output - The output to parse
+ * @param response - The Airtop API response to parse
  * @returns The parsed output
  */
 export function parseJsonIfPresent(

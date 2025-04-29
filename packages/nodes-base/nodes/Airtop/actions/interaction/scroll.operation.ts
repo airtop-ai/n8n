@@ -44,9 +44,10 @@ export const description: INodeProperties[] = [
 	},
 	{
 		displayName: 'Element Description',
+		default: '',
+		description: 'A natural language description of the element to scroll to',
 		name: 'scrollToElement',
 		type: 'string',
-		default: '',
 		placeholder: 'e.g. the page section titled "Contact Us"',
 		required: true,
 		displayOptions: {
@@ -184,12 +185,11 @@ export async function execute(
 	const { sessionId, windowId } = validateSessionAndWindowId.call(this, index);
 
 	const scrollingMode = validateScrollingMode.call(this, index);
-	const isToEdges = scrollingMode === 'toEdges';
+	const isAutomatic = scrollingMode === 'automatic';
 
-	const scrollToElement =
-		scrollingMode === 'automatic'
-			? validateRequiredStringField.call(this, index, 'scrollToElement', 'Element Description')
-			: '';
+	const scrollToElement = isAutomatic
+		? validateRequiredStringField.call(this, index, 'scrollToElement', 'Element Description')
+		: '';
 
 	const scrollToEdge = this.getNodeParameter('scrollToEdge.edgeValues', index, {}) as {
 		xAxis?: string;
@@ -201,12 +201,12 @@ export async function execute(
 	const scrollWithin = this.getNodeParameter('scrollWithin', index, '') as string;
 
 	const request: IDataObject = {
-		// when scrollingMode is 'toEdges'
-		...(isToEdges ? { scrollToEdge } : {}),
-		...(isToEdges ? { scrollBy } : {}),
-		// when scrollingMode is 'toElement'
-		...(!isToEdges ? { scrollToElement } : {}),
-		...(!isToEdges ? { scrollWithin } : {}),
+		// when scrollingMode is 'Manual'
+		...(!isAutomatic ? { scrollToEdge } : {}),
+		...(!isAutomatic ? { scrollBy } : {}),
+		// when scrollingMode is 'Automatic'
+		...(isAutomatic ? { scrollToElement } : {}),
+		...(isAutomatic ? { scrollWithin } : {}),
 	};
 
 	const fullRequest = constructInteractionRequest.call(this, index, request);
