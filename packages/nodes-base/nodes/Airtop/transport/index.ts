@@ -31,12 +31,6 @@ export async function apiRequest(
 		json: true,
 	};
 
-	console.log('--------------------------------');
-	console.log(`[${method}] ${endpoint}`);
-	console.log(JSON.stringify(options.qs, null, 2));
-	console.log(JSON.stringify(options.body, null, 2));
-	console.log('--------------------------------');
-
 	if (Object.keys(body).length === 0) {
 		delete options.body;
 	}

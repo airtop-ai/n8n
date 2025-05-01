@@ -5,29 +5,50 @@ import { createMockExecuteFunction } from '../helpers';
 const baseNodeParameters = {
 	resource: 'file',
 	operation: 'getMany',
+	sessionId: 'test-session-123',
 	returnAll: true,
-	options: {},
+	wrapFilesInSingleItem: true,
 };
 
-const mockFileResponse = {
-	data: [
-		{
-			id: 'file-123',
-			fileName: 'test-file.pdf',
-			fileType: 'customer_upload',
-			fileBytes: 12345,
-			status: 'available',
+const mockFilesResponse = {
+	data: {
+		files: [
+			{
+				id: 'file-123',
+				name: 'document1.pdf',
+				size: 12345,
+				contentType: 'application/pdf',
+				createdAt: '2023-06-15T10:30:00Z',
+			},
+			{
+				id: 'file-456',
+				name: 'image1.jpg',
+				size: 54321,
+				contentType: 'image/jpeg',
+				createdAt: '2023-06-16T11:45:00Z',
+			},
+		],
+		pagination: {
+			hasMore: false,
 		},
-		{
-			id: 'file-456',
-			fileName: 'screenshot.png',
-			fileType: 'screenshot',
-			fileBytes: 6789,
-			status: 'available',
+	},
+};
+
+const mockPaginatedResponse = {
+	data: {
+		files: [mockFilesResponse.data.files[0]],
+		pagination: {
+			hasMore: true,
 		},
-	],
-	meta: {
-		requestId: 'req-123',
+	},
+};
+
+const mockSecondPageResponse = {
+	data: {
+		files: [mockFilesResponse.data.files[1]],
+		pagination: {
+			hasMore: false,
+		},
 	},
 };
 
@@ -35,13 +56,11 @@ jest.mock('../../../transport', () => {
 	const originalModule = jest.requireActual<typeof transport>('../../../transport');
 	return {
 		...originalModule,
-		apiRequest: jest.fn(async function () {
-			return mockFileResponse;
-		}),
+		apiRequest: jest.fn(),
 	};
 });
 
-describe('Test Airtop, file getMany operation', () => {
+describe('Test Airtop, get many files operation', () => {
 	afterAll(() => {
 		jest.unmock('../../../transport');
 	});
@@ -50,89 +69,58 @@ describe('Test Airtop, file getMany operation', () => {
 		jest.clearAllMocks();
 	});
 
-	it('should get files with returnAll=true', async () => {
+	it('should get all files successfully', async () => {
+		const apiRequestMock = transport.apiRequest as jest.Mock;
+		apiRequestMock.mockResolvedValueOnce(mockFilesResponse);
+
 		const result = await getMany.execute.call(createMockExecuteFunction(baseNodeParameters), 0);
 
-		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith('GET', '/files', undefined, {
-			offset: 0,
-			limit: 10,
-		});
+		expect(apiRequestMock).toHaveBeenCalledWith(
+			'GET',
+			'/files',
+			{},
+			{
+				limit: 100,
+				offset: 0,
+				sessionIds: '',
+			},
+		);
 
 		expect(result).toEqual([
 			{
-				json: mockFileResponse.data[0],
-				pairedItem: {
-					item: 0,
-				},
-			},
-			{
-				json: mockFileResponse.data[1],
-				pairedItem: {
-					item: 0,
+				json: {
+					...mockFilesResponse,
 				},
 			},
 		]);
 	});
 
-	it('should get files with limit', async () => {
+	it('should handle limited results', async () => {
+		const apiRequestMock = transport.apiRequest as jest.Mock;
+		apiRequestMock.mockResolvedValueOnce(mockPaginatedResponse);
+
 		const nodeParameters = {
 			...baseNodeParameters,
 			returnAll: false,
-			limit: 5,
+			limit: 1,
 		};
 
 		const result = await getMany.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
-		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith('GET', '/files', undefined, {
-			limit: 5,
-		});
+		expect(apiRequestMock).toHaveBeenCalledWith(
+			'GET',
+			'/files',
+			{},
+			{
+				limit: 1,
+				sessionIds: '',
+			},
+		);
 
 		expect(result).toEqual([
 			{
-				json: mockFileResponse.data[0],
-				pairedItem: {
-					item: 0,
-				},
-			},
-			{
-				json: mockFileResponse.data[1],
-				pairedItem: {
-					item: 0,
-				},
-			},
-		]);
-	});
-
-	it('should get files with sessionIds', async () => {
-		const nodeParameters = {
-			...baseNodeParameters,
-			options: {
-				sessionIds: 'session-123,session-456',
-			},
-		};
-
-		const result = await getMany.execute.call(createMockExecuteFunction(nodeParameters), 0);
-
-		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith('GET', '/files', undefined, {
-			offset: 0,
-			limit: 10,
-			sessionIds: ['session-123', 'session-456'],
-		});
-
-		expect(result).toEqual([
-			{
-				json: mockFileResponse.data[0],
-				pairedItem: {
-					item: 0,
-				},
-			},
-			{
-				json: mockFileResponse.data[1],
-				pairedItem: {
-					item: 0,
+				json: {
+					...mockPaginatedResponse,
 				},
 			},
 		]);

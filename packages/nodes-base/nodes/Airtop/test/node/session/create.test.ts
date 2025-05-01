@@ -1,7 +1,19 @@
 import * as create from '../../../actions/session/create.operation';
-import { ERROR_MESSAGES, INTEGRATION_URL } from '../../../constants';
+import { ERROR_MESSAGES, SESSION_STATUS } from '../../../constants';
 import * as transport from '../../../transport';
 import { createMockExecuteFunction } from '../helpers';
+
+const mockCreatedSession = {
+	data: { id: 'test-session-123', status: SESSION_STATUS.ACTIVE },
+};
+
+const baseNodeParameters = {
+	resource: 'session',
+	operation: 'create',
+	profileName: 'test-profile',
+	timeoutMinutes: 10,
+	saveProfileOnTermination: false,
+};
 
 jest.mock('../../../transport', () => {
 	const originalModule = jest.requireActual<typeof transport>('../../../transport');
@@ -9,8 +21,7 @@ jest.mock('../../../transport', () => {
 		...originalModule,
 		apiRequest: jest.fn(async function () {
 			return {
-				sessionId: 'test-session-123',
-				status: 'success',
+				...mockCreatedSession,
 			};
 		}),
 	};
@@ -27,20 +38,17 @@ describe('Test Airtop, session create operation', () => {
 
 	it('should create a session with minimal parameters', async () => {
 		const nodeParameters = {
-			resource: 'session',
-			operation: 'create',
-			profileName: 'test-profile',
-			timeoutMinutes: 10,
-			saveProfileOnTermination: false,
+			...baseNodeParameters,
 			proxy: 'none',
 		};
 
 		const result = await create.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
 		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith('POST', `${INTEGRATION_URL}/create-session`, {
+		expect(transport.apiRequest).toHaveBeenCalledWith('POST', '/sessions', {
 			configuration: {
 				profileName: 'test-profile',
+				solveCaptcha: false,
 				timeoutMinutes: 10,
 				proxy: false,
 			},
@@ -57,10 +65,7 @@ describe('Test Airtop, session create operation', () => {
 
 	it('should create a session with save profile enabled', async () => {
 		const nodeParameters = {
-			resource: 'session',
-			operation: 'create',
-			profileName: 'test-profile',
-			timeoutMinutes: 15,
+			...baseNodeParameters,
 			saveProfileOnTermination: true,
 			proxy: 'none',
 		};
@@ -68,18 +73,14 @@ describe('Test Airtop, session create operation', () => {
 		const result = await create.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
 		expect(transport.apiRequest).toHaveBeenCalledTimes(2);
-		expect(transport.apiRequest).toHaveBeenNthCalledWith(
-			1,
-			'POST',
-			`${INTEGRATION_URL}/create-session`,
-			{
-				configuration: {
-					profileName: 'test-profile',
-					timeoutMinutes: 15,
-					proxy: false,
-				},
+		expect(transport.apiRequest).toHaveBeenNthCalledWith(1, 'POST', '/sessions', {
+			configuration: {
+				profileName: 'test-profile',
+				solveCaptcha: false,
+				timeoutMinutes: 10,
+				proxy: false,
 			},
-		);
+		});
 		expect(transport.apiRequest).toHaveBeenNthCalledWith(
 			2,
 			'PUT',
@@ -97,20 +98,17 @@ describe('Test Airtop, session create operation', () => {
 
 	it('should create a session with integrated proxy', async () => {
 		const nodeParameters = {
-			resource: 'session',
-			operation: 'create',
-			profileName: 'test-profile',
-			timeoutMinutes: 10,
-			saveProfileOnTermination: false,
+			...baseNodeParameters,
 			proxy: 'integrated',
 		};
 
 		const result = await create.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
 		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith('POST', `${INTEGRATION_URL}/create-session`, {
+		expect(transport.apiRequest).toHaveBeenCalledWith('POST', '/sessions', {
 			configuration: {
 				profileName: 'test-profile',
+				solveCaptcha: false,
 				timeoutMinutes: 10,
 				proxy: true,
 			},
@@ -127,11 +125,7 @@ describe('Test Airtop, session create operation', () => {
 
 	it('should create a session with custom proxy', async () => {
 		const nodeParameters = {
-			resource: 'session',
-			operation: 'create',
-			profileName: 'test-profile',
-			timeoutMinutes: 10,
-			saveProfileOnTermination: false,
+			...baseNodeParameters,
 			proxy: 'custom',
 			proxyUrl: 'http://proxy.example.com:8080',
 		};
@@ -139,9 +133,10 @@ describe('Test Airtop, session create operation', () => {
 		const result = await create.execute.call(createMockExecuteFunction(nodeParameters), 0);
 
 		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
-		expect(transport.apiRequest).toHaveBeenCalledWith('POST', `${INTEGRATION_URL}/create-session`, {
+		expect(transport.apiRequest).toHaveBeenCalledWith('POST', '/sessions', {
 			configuration: {
 				profileName: 'test-profile',
+				solveCaptcha: false,
 				timeoutMinutes: 10,
 				proxy: 'http://proxy.example.com:8080',
 			},
@@ -174,11 +169,7 @@ describe('Test Airtop, session create operation', () => {
 
 	it('should throw error when custom proxy URL is empty', async () => {
 		const nodeParameters = {
-			resource: 'session',
-			operation: 'create',
-			profileName: 'test-profile',
-			timeoutMinutes: 10,
-			saveProfileOnTermination: false,
+			...baseNodeParameters,
 			proxy: 'custom',
 			proxyUrl: '',
 		};

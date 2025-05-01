@@ -1,9 +1,16 @@
 import type { IDataObject, INodeExecutionData } from 'n8n-workflow';
 
+export interface IAirtopSessionResponse extends IDataObject {
+	data: {
+		id: string;
+		status: string;
+	};
+}
+
 export interface IAirtopResponse extends IDataObject {
 	sessionId?: string;
 	windowId?: string;
-	data?: {
+	data?: IDataObject & {
 		windowId?: string;
 		modelResponse?: string;
 		files?: IDataObject[];
@@ -15,6 +22,18 @@ export interface IAirtopResponse extends IDataObject {
 	errors?: IDataObject[];
 	warnings?: IDataObject[];
 	output?: IDataObject;
+}
+
+export interface IAirtopResponseWithFiles extends IAirtopResponse {
+	data: {
+		files: IDataObject[];
+		fileName?: string;
+		status?: string;
+		downloadUrl?: string;
+		pagination: {
+			hasMore: boolean;
+		};
+	};
 }
 
 export interface IAirtopInteractionRequest extends IDataObject {

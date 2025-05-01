@@ -36,27 +36,23 @@ export async function router(this: IExecuteFunctions): Promise<INodeExecutionDat
 					break;
 				case 'interaction':
 					responseData = await interaction[airtopNodeData.operation].execute.call(this, i);
-					responseData = isCalledAsTool ? cleanOutputForToolUse(responseData) : responseData;
 					break;
 				case 'extraction':
 					responseData = await extraction[airtopNodeData.operation].execute.call(this, i);
-					responseData = isCalledAsTool ? cleanOutputForToolUse(responseData) : responseData;
 					break;
 				case 'file':
-					if (airtopNodeData.operation === 'getMany') {
-						responseData = await file.getMany.execute.call(this, i);
-					} else {
-						throw new NodeOperationError(
-							this.getNode(),
-							`The operation "${airtopNodeData.operation}" is not implemented for resource "${airtopNodeData.resource}"!`,
-						);
-					}
+					responseData = await file[airtopNodeData.operation].execute.call(this, i);
 					break;
 				default:
 					throw new NodeOperationError(
 						this.getNode(),
 						`The resource "${resource}" is not supported!`,
 					);
+			}
+
+			// Get cleaner output when called as tool
+			if (isCalledAsTool && !['session', 'window'].includes(resource)) {
+				responseData = cleanOutputForToolUse(responseData);
 			}
 
 			const executionData = this.helpers.constructExecutionMetaData(responseData, {
