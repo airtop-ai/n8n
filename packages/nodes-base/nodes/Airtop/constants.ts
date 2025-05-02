@@ -26,10 +26,15 @@ export const BASE_URL = process.env.AIRTOP_BASE_URL ?? 'https://api.airtop.ai/ap
 export const INTEGRATION_URL =
 	process.env.AIRTOP_INTEGRATION_URL ?? 'https://portal-api.airtop.ai/integrations/v1/no-code';
 
-// Create operation
+// Session operations
 export const DEFAULT_TIMEOUT_MINUTES = 10;
 export const MIN_TIMEOUT_MINUTES = 1;
 export const MAX_TIMEOUT_MINUTES = 10080;
+export const SESSION_STATUS = {
+	INITIALIZING: 'initializing',
+	RUNNING: 'running',
+} as const;
+export const SESSION_CREATION_TIMEOUT = 5 * 60 * 1000; // 5 mins
 
 // Fill form operation
 export const FILL_FORM_TIMEOUT = 5 * 60 * 1000; // 5 mins
@@ -55,4 +60,4 @@ export const ERROR_MESSAGES = {
 	SCROLL_BY_AMOUNT_INVALID:
 		"'Scroll By' amount must be a number and either a percentage or pixels (e.g. '100px' or '100%')",
 	SCROLL_MODE_INVALID: "Please fill any of the 'Scroll To Edge' or 'Scroll By' parameters",
-};
+} as const;

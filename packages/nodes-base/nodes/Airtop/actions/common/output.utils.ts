@@ -45,7 +45,7 @@ export function parseJsonIfPresent(
  */
 export function cleanOutputForToolUse(output: IAirtopNodeExecutionData[]) {
 	const getOutput = (executionData: IAirtopNodeExecutionData) => {
-		// handle errors
+		// Return error message
 		if (executionData.json?.errors?.length) {
 			const errorMessage = executionData.json?.errors[0].message as string;
 			return {
@@ -53,14 +53,21 @@ export function cleanOutputForToolUse(output: IAirtopNodeExecutionData[]) {
 			};
 		}
 
-		// handle output parsed from JSON
+		// Return output parsed from JSON
 		if (executionData.json?.output) {
 			return executionData.json?.output;
 		}
 
-		// handle model response
+		// Return model response
+		if (executionData.json?.data?.modelResponse) {
+			return {
+				output: executionData.json?.data?.modelResponse,
+			};
+		}
+
+		// Return everything else
 		return {
-			output: executionData.json?.data?.modelResponse,
+			output: { ...(executionData.json?.data ?? {}) },
 		};
 	};
 

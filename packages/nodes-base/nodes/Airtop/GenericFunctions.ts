@@ -1,4 +1,4 @@
-import { NodeApiError, type IExecuteFunctions, type INode } from 'n8n-workflow';
+import { NodeApiError, type IExecuteFunctions, type INode, type IDataObject } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
 import { SESSION_MODE } from './actions/common/fields';
@@ -8,10 +8,11 @@ import {
 	DEFAULT_TIMEOUT_MINUTES,
 	MIN_TIMEOUT_MINUTES,
 	MAX_TIMEOUT_MINUTES,
-	INTEGRATION_URL,
+	SESSION_STATUS,
+	SESSION_CREATION_TIMEOUT,
 } from './constants';
 import { apiRequest } from './transport';
-import type { IAirtopResponse } from './transport/types';
+import type { IAirtopResponse, IAirtopSessionResponse } from './transport/types';
 
 /**
  * Validate a required string field
@@ -350,6 +351,56 @@ export function shouldCreateNewSession(this: IExecuteFunctions, index: number) {
 }
 
 /**
+ * Create a new session and wait until the session is ready
+ * @param this - The execution context
+ * @param parameters - The parameters for the session
+ * @returns The session ID
+ */
+export async function createSession(
+	this: IExecuteFunctions,
+	parameters: IDataObject,
+	timeout = SESSION_CREATION_TIMEOUT,
+): Promise<{ sessionId: string }> {
+	// Request session creation
+	const response = (await apiRequest.call(
+		this,
+		'POST',
+		'/sessions',
+		parameters,
+	)) as IAirtopSessionResponse;
+	const sessionId = response?.data?.id;
+
+	if (!sessionId) {
+		throw new NodeApiError(this.getNode(), {
+			message: 'Failed to create session',
+			code: 500,
+		});
+	}
+
+	// Poll until the session is ready or timeout is reached
+	let sessionStatus = response?.data?.status;
+	const startTime = Date.now();
+
+	while (sessionStatus !== SESSION_STATUS.RUNNING) {
+		if (Date.now() - startTime > timeout) {
+			throw new NodeApiError(this.getNode(), {
+				message: ERROR_MESSAGES.TIMEOUT_REACHED,
+				code: 500,
+			});
+		}
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+		const sessionStatusResponse = (await apiRequest.call(
+			this,
+			'GET',
+			`/sessions/${sessionId}`,
+		)) as IAirtopSessionResponse;
+		sessionStatus = sessionStatusResponse.data.status;
+	}
+
+	return { sessionId };
+}
+
+/**
  * Create a new session and window
  * @param this - The execution context
  * @param index - The index of the node
@@ -360,11 +411,10 @@ export async function createSessionAndWindow(
 	index: number,
 ): Promise<{ sessionId: string; windowId: string }> {
 	const node = this.getNode();
-	const noCodeEndpoint = `${INTEGRATION_URL}/create-session`;
 	const profileName = validateProfileName.call(this, index);
 	const url = validateRequiredStringField.call(this, index, 'url', 'URL');
 
-	const { sessionId } = await apiRequest.call(this, 'POST', noCodeEndpoint, {
+	const { sessionId } = await createSession.call(this, {
 		configuration: {
 			profileName,
 		},

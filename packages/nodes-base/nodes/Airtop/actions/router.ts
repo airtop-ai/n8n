@@ -3,6 +3,7 @@ import { NodeOperationError } from 'n8n-workflow';
 
 import { cleanOutputForToolUse } from './common/output.utils';
 import * as extraction from './extraction/Extraction.resource';
+import * as file from './file/File.resource';
 import * as interaction from './interaction/Interaction.resource';
 import type { AirtopType } from './node.type';
 import * as session from './session/Session.resource';
@@ -35,17 +36,23 @@ export async function router(this: IExecuteFunctions): Promise<INodeExecutionDat
 					break;
 				case 'interaction':
 					responseData = await interaction[airtopNodeData.operation].execute.call(this, i);
-					responseData = isCalledAsTool ? cleanOutputForToolUse(responseData) : responseData;
 					break;
 				case 'extraction':
 					responseData = await extraction[airtopNodeData.operation].execute.call(this, i);
-					responseData = isCalledAsTool ? cleanOutputForToolUse(responseData) : responseData;
+					break;
+				case 'file':
+					responseData = await file[airtopNodeData.operation].execute.call(this, i);
 					break;
 				default:
 					throw new NodeOperationError(
 						this.getNode(),
 						`The resource "${resource}" is not supported!`,
 					);
+			}
+
+			// Get cleaner output when called as tool
+			if (isCalledAsTool && !['session', 'window'].includes(resource)) {
+				responseData = cleanOutputForToolUse(responseData);
 			}
 
 			const executionData = this.helpers.constructExecutionMetaData(responseData, {

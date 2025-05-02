@@ -19,6 +19,12 @@ export const description: INodeProperties[] = [
 		name: 'outputImageAsBinary',
 		type: 'boolean',
 		default: false,
+		displayOptions: {
+			show: {
+				resource: ['window'],
+				operation: ['takeScreenshot'],
+			},
+		},
 	},
 ];
 
