@@ -34,7 +34,7 @@ export const SESSION_STATUS = {
 	INITIALIZING: 'initializing',
 	RUNNING: 'running',
 } as const;
-export const SESSION_CREATION_TIMEOUT = 3 * 60 * 1000; // 3 mins
+export const SESSION_CREATION_TIMEOUT = 5 * 60 * 1000; // 5 mins
 
 // Fill form operation
 export const FILL_FORM_TIMEOUT = 5 * 60 * 1000; // 5 mins
