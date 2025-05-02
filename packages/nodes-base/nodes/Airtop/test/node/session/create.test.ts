@@ -4,7 +4,7 @@ import * as transport from '../../../transport';
 import { createMockExecuteFunction } from '../helpers';
 
 const mockCreatedSession = {
-	data: { id: 'test-session-123', status: SESSION_STATUS.ACTIVE },
+	data: { id: 'test-session-123', status: SESSION_STATUS.RUNNING },
 };
 
 const baseNodeParameters = {
@@ -35,7 +35,9 @@ describe('Test Airtop, session create operation', () => {
 	afterEach(() => {
 		jest.clearAllMocks();
 	});
-
+	/**
+	 * Minimal parameters
+	 */
 	it('should create a session with minimal parameters', async () => {
 		const nodeParameters = {
 			...baseNodeParameters,
@@ -62,7 +64,9 @@ describe('Test Airtop, session create operation', () => {
 			},
 		]);
 	});
-
+	/**
+	 * Profiles
+	 */
 	it('should create a session with save profile enabled', async () => {
 		const nodeParameters = {
 			...baseNodeParameters,
@@ -95,7 +99,9 @@ describe('Test Airtop, session create operation', () => {
 			},
 		]);
 	});
-
+	/**
+	 * Proxy
+	 */
 	it('should create a session with integrated proxy', async () => {
 		const nodeParameters = {
 			...baseNodeParameters,
@@ -177,5 +183,68 @@ describe('Test Airtop, session create operation', () => {
 		await expect(create.execute.call(createMockExecuteFunction(nodeParameters), 0)).rejects.toThrow(
 			ERROR_MESSAGES.PROXY_URL_REQUIRED,
 		);
+	});
+	/**
+	 * Auto solve captcha
+	 */
+	it('should create a session with auto solve captcha enabled', async () => {
+		const nodeParameters = {
+			...baseNodeParameters,
+			additionalFields: {
+				autoSolveCaptchas: true,
+			},
+		};
+
+		const result = await create.execute.call(createMockExecuteFunction(nodeParameters), 0);
+
+		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
+		expect(transport.apiRequest).toHaveBeenCalledWith('POST', '/sessions', {
+			configuration: {
+				profileName: 'test-profile',
+				solveCaptcha: true,
+				timeoutMinutes: 10,
+				proxy: false,
+			},
+		});
+
+		expect(result).toEqual([
+			{
+				json: {
+					sessionId: 'test-session-123',
+				},
+			},
+		]);
+	});
+	/**
+	 * Chrome extensions
+	 */
+	it('should create a session with chrome extensions enabled', async () => {
+		const nodeParameters = {
+			...baseNodeParameters,
+			additionalFields: {
+				extensionIds: 'extId1, extId2',
+			},
+		};
+
+		const result = await create.execute.call(createMockExecuteFunction(nodeParameters), 0);
+
+		expect(transport.apiRequest).toHaveBeenCalledTimes(1);
+		expect(transport.apiRequest).toHaveBeenCalledWith('POST', '/sessions', {
+			configuration: {
+				profileName: 'test-profile',
+				solveCaptcha: false,
+				timeoutMinutes: 10,
+				proxy: false,
+				extensionIds: ['extId1', 'extId2'],
+			},
+		});
+
+		expect(result).toEqual([
+			{
+				json: {
+					sessionId: 'test-session-123',
+				},
+			},
+		]);
 	});
 });

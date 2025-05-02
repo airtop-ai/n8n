@@ -9,6 +9,7 @@ import {
 	MIN_TIMEOUT_MINUTES,
 	MAX_TIMEOUT_MINUTES,
 	SESSION_STATUS,
+	SESSION_CREATION_TIMEOUT,
 } from './constants';
 import { apiRequest } from './transport';
 import type { IAirtopResponse, IAirtopSessionResponse } from './transport/types';
@@ -358,7 +359,9 @@ export function shouldCreateNewSession(this: IExecuteFunctions, index: number) {
 export async function createSession(
 	this: IExecuteFunctions,
 	parameters: IDataObject,
+	timeout = SESSION_CREATION_TIMEOUT,
 ): Promise<{ sessionId: string }> {
+	// Request session creation
 	const response = (await apiRequest.call(
 		this,
 		'POST',
@@ -373,9 +376,18 @@ export async function createSession(
 			code: 500,
 		});
 	}
-	// Poll until the session is ready
+
+	// Poll until the session is ready or timeout is reached
 	let sessionStatus = response?.data?.status;
-	while (sessionStatus !== SESSION_STATUS.ACTIVE) {
+	const startTime = Date.now();
+
+	while (sessionStatus !== SESSION_STATUS.RUNNING) {
+		if (Date.now() - startTime > timeout) {
+			throw new NodeApiError(this.getNode(), {
+				message: ERROR_MESSAGES.TIMEOUT_REACHED,
+				code: 500,
+			});
+		}
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 		const sessionStatusResponse = (await apiRequest.call(
 			this,

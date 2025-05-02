@@ -31,9 +31,10 @@ export const DEFAULT_TIMEOUT_MINUTES = 10;
 export const MIN_TIMEOUT_MINUTES = 1;
 export const MAX_TIMEOUT_MINUTES = 10080;
 export const SESSION_STATUS = {
-	INITIAL: 'initializing',
-	ACTIVE: 'running',
+	INITIALIZING: 'initializing',
+	RUNNING: 'running',
 } as const;
+export const SESSION_CREATION_TIMEOUT = 3 * 60 * 1000; // 3 mins
 
 // Fill form operation
 export const FILL_FORM_TIMEOUT = 5 * 60 * 1000; // 5 mins

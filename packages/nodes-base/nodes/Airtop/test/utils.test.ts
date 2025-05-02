@@ -19,7 +19,7 @@ import {
 import type * as transport from '../transport';
 
 const mockCreatedSession = {
-	data: { id: 'new-session-123', status: SESSION_STATUS.ACTIVE },
+	data: { id: 'new-session-123', status: SESSION_STATUS.RUNNING },
 };
 
 jest.mock('../transport', () => {

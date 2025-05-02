@@ -27,7 +27,7 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Get Many',
 				value: 'getMany',
-				description: 'Get a list of uploaded files',
+				description: 'Get details of multiple uploaded files',
 				action: 'Get many files',
 			},
 			{

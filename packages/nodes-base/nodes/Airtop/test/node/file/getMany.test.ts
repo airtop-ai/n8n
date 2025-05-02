@@ -7,7 +7,7 @@ const baseNodeParameters = {
 	operation: 'getMany',
 	sessionId: 'test-session-123',
 	returnAll: true,
-	wrapFilesInSingleItem: true,
+	outputSingleItem: true,
 };
 
 const mockFilesResponse = {
@@ -39,15 +39,6 @@ const mockPaginatedResponse = {
 		files: [mockFilesResponse.data.files[0]],
 		pagination: {
 			hasMore: true,
-		},
-	},
-};
-
-const mockSecondPageResponse = {
-	data: {
-		files: [mockFilesResponse.data.files[1]],
-		pagination: {
-			hasMore: false,
 		},
 	},
 };

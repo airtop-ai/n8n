@@ -22,9 +22,10 @@ const mockFileResponse = {
 const mockBinaryBuffer = Buffer.from('mock-binary-data');
 
 const mockPreparedBinaryData = {
-	data: 'prepared-binary-data',
 	mimeType: 'application/pdf',
+	fileType: 'pdf',
 	fileName: 'test-file.pdf',
+	data: 'mock-base64-data',
 };
 
 jest.mock('../../../transport', () => {
@@ -71,10 +72,11 @@ describe('Test Airtop, get file operation', () => {
 		};
 
 		const mockExecuteFunction = createMockExecuteFunction(nodeParameters);
-		mockExecuteFunction.helpers.httpRequest = jest.fn().mockResolvedValueOnce(mockBinaryBuffer);
+
+		mockExecuteFunction.helpers.httpRequest = jest.fn().mockResolvedValue(mockBinaryBuffer);
 		mockExecuteFunction.helpers.prepareBinaryData = jest
 			.fn()
-			.mockResolvedValueOnce(mockPreparedBinaryData);
+			.mockResolvedValue(mockPreparedBinaryData);
 
 		const result = await get.execute.call(mockExecuteFunction, 0);
 

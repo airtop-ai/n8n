@@ -39,6 +39,13 @@ export async function execute(
 	const fileId = this.getNodeParameter('fileId', index, '') as string;
 	const outputBinaryFile = this.getNodeParameter('outputBinaryFile', index, false);
 
+	if (!fileId) {
+		throw new NodeOperationError(
+			this.getNode(),
+			ERROR_MESSAGES.REQUIRED_PARAMETER.replace('{{field}}', 'File ID'),
+		);
+	}
+
 	const response = (await apiRequest.call(
 		this,
 		'GET',
@@ -46,13 +53,6 @@ export async function execute(
 	)) as IAirtopResponseWithFiles;
 
 	const { fileName = '', downloadUrl = '', status = '' } = response?.data ?? {};
-
-	if (!fileId) {
-		throw new NodeOperationError(
-			this.getNode(),
-			ERROR_MESSAGES.REQUIRED_PARAMETER.replace('{{field}}', 'File ID'),
-		);
-	}
 
 	// Handle binary file output
 	if (outputBinaryFile && downloadUrl && status === 'available') {

@@ -50,15 +50,16 @@ export const description: INodeProperties[] = [
 		default: '',
 		description:
 			'Comma-separated list of <a href="https://docs.airtop.ai/api-reference/airtop-api/sessions/create" target="_blank">Session IDs</a> to filter files by',
-		placeholder: 'e.g. 980875c4-e12d,a302-f3dd51e',
+		placeholder: 'e.g. 6aac6f73-bd89-4a76-ab32-5a6c422e8b0b, a13c6f73-bd89-4a76-ab32-5a6c422e8224',
 		displayOptions,
 	},
 	{
-		displayName: 'Wrap Output',
-		name: 'wrapFilesInSingleItem',
+		displayName: 'Output Files in Single Item',
+		name: 'outputSingleItem',
 		type: 'boolean',
 		default: true,
-		description: 'Whether to output a single item with all files or output one item per file',
+		description:
+			'Whether to output one item containing all files or output each file as a separate item',
 		displayOptions,
 	},
 ];
@@ -70,11 +71,7 @@ export async function execute(
 	const returnAll = this.getNodeParameter('returnAll', index, false) as boolean;
 	const limit = this.getNodeParameter('limit', index, 10);
 	const sessionIds = this.getNodeParameter('sessionIds', index, '') as string;
-	const wrapFilesInSingleItem = this.getNodeParameter(
-		'wrapFilesInSingleItem',
-		index,
-		true,
-	) as boolean;
+	const outputSingleItem = this.getNodeParameter('outputSingleItem', index, true) as boolean;
 
 	const endpoint = '/files';
 	let files: IAirtopResponse[] = [];
@@ -87,9 +84,14 @@ export async function execute(
 		files = responseData.data.files;
 	}
 
-	if (wrapFilesInSingleItem) {
+	/**
+	 * Returns the files in one of two formats:
+	 * - A single JSON item containing an array of all files (when outputSingleItem = true)
+	 * - Multiple JSON items, one per file
+	 * Data structure reference: https://docs.n8n.io/courses/level-two/chapter-1/#data-structure-of-n8n
+	 */
+	if (outputSingleItem) {
 		return this.helpers.returnJsonArray({ ...responseData });
 	}
-
 	return wrapData(files);
 }
