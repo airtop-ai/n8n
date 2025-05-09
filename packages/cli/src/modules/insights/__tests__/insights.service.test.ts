@@ -1,12 +1,12 @@
+import type { InsightsDateRange } from '@n8n/api-types';
+import type { LicenseState } from '@n8n/backend-common';
+import type { Project } from '@n8n/db';
+import type { WorkflowEntity } from '@n8n/db';
+import type { IWorkflowDb } from '@n8n/db';
 import { Container } from '@n8n/di';
 import { mock } from 'jest-mock-extended';
 import { DateTime } from 'luxon';
-import type { Logger } from 'n8n-core';
 
-import type { Project } from '@/databases/entities/project';
-import type { WorkflowEntity } from '@/databases/entities/workflow-entity';
-import type { IWorkflowDb } from '@/interfaces';
-import type { License } from '@/license';
 import { createTeamProject } from '@test-integration/db/projects';
 import { createWorkflow } from '@test-integration/db/workflows';
 import * as testDb from '@test-integration/test-db';
@@ -19,7 +19,7 @@ import { InsightsService } from '../insights.service';
 
 // Initialize DB once for all tests
 beforeAll(async () => {
-	await testDb.init(['insights']);
+	await testDb.init();
 });
 
 beforeEach(async () => {
@@ -27,7 +27,7 @@ beforeEach(async () => {
 		'InsightsRaw',
 		'InsightsByPeriod',
 		'InsightsMetadata',
-		'Workflow',
+		'WorkflowEntity',
 		'Project',
 	]);
 });
@@ -492,22 +492,21 @@ describe('getInsightsByTime', () => {
 
 describe('getAvailableDateRanges', () => {
 	let insightsService: InsightsService;
-	let licenseMock: jest.Mocked<License>;
+	let licenseMock: jest.Mocked<LicenseState>;
 
 	beforeAll(() => {
-		licenseMock = mock<License>();
+		licenseMock = mock<LicenseState>();
 		insightsService = new InsightsService(
 			mock<InsightsByPeriodRepository>(),
 			mock<InsightsCompactionService>(),
 			mock<InsightsCollectionService>(),
 			licenseMock,
-			mock<Logger>(),
 		);
 	});
 
 	test('returns correct ranges when hourly data is enabled and max history is unlimited', () => {
 		licenseMock.getInsightsMaxHistory.mockReturnValue(-1);
-		licenseMock.isInsightsHourlyDataEnabled.mockReturnValue(true);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(true);
 
 		const result = insightsService.getAvailableDateRanges();
 
@@ -517,13 +516,14 @@ describe('getAvailableDateRanges', () => {
 			{ key: '2weeks', licensed: true, granularity: 'day' },
 			{ key: 'month', licensed: true, granularity: 'day' },
 			{ key: 'quarter', licensed: true, granularity: 'week' },
+			{ key: '6months', licensed: true, granularity: 'week' },
 			{ key: 'year', licensed: true, granularity: 'week' },
 		]);
 	});
 
 	test('returns correct ranges when hourly data is enabled and max history is 365 days', () => {
 		licenseMock.getInsightsMaxHistory.mockReturnValue(365);
-		licenseMock.isInsightsHourlyDataEnabled.mockReturnValue(true);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(true);
 
 		const result = insightsService.getAvailableDateRanges();
 
@@ -533,13 +533,14 @@ describe('getAvailableDateRanges', () => {
 			{ key: '2weeks', licensed: true, granularity: 'day' },
 			{ key: 'month', licensed: true, granularity: 'day' },
 			{ key: 'quarter', licensed: true, granularity: 'week' },
+			{ key: '6months', licensed: true, granularity: 'week' },
 			{ key: 'year', licensed: true, granularity: 'week' },
 		]);
 	});
 
 	test('returns correct ranges when hourly data is disabled and max history is 30 days', () => {
 		licenseMock.getInsightsMaxHistory.mockReturnValue(30);
-		licenseMock.isInsightsHourlyDataEnabled.mockReturnValue(false);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(false);
 
 		const result = insightsService.getAvailableDateRanges();
 
@@ -549,13 +550,14 @@ describe('getAvailableDateRanges', () => {
 			{ key: '2weeks', licensed: true, granularity: 'day' },
 			{ key: 'month', licensed: true, granularity: 'day' },
 			{ key: 'quarter', licensed: false, granularity: 'week' },
+			{ key: '6months', licensed: false, granularity: 'week' },
 			{ key: 'year', licensed: false, granularity: 'week' },
 		]);
 	});
 
 	test('returns correct ranges when max history is less than 7 days', () => {
 		licenseMock.getInsightsMaxHistory.mockReturnValue(5);
-		licenseMock.isInsightsHourlyDataEnabled.mockReturnValue(false);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(false);
 
 		const result = insightsService.getAvailableDateRanges();
 
@@ -565,13 +567,14 @@ describe('getAvailableDateRanges', () => {
 			{ key: '2weeks', licensed: false, granularity: 'day' },
 			{ key: 'month', licensed: false, granularity: 'day' },
 			{ key: 'quarter', licensed: false, granularity: 'week' },
+			{ key: '6months', licensed: false, granularity: 'week' },
 			{ key: 'year', licensed: false, granularity: 'week' },
 		]);
 	});
 
 	test('returns correct ranges when max history is 90 days and hourly data is enabled', () => {
 		licenseMock.getInsightsMaxHistory.mockReturnValue(90);
-		licenseMock.isInsightsHourlyDataEnabled.mockReturnValue(true);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(true);
 
 		const result = insightsService.getAvailableDateRanges();
 
@@ -581,7 +584,83 @@ describe('getAvailableDateRanges', () => {
 			{ key: '2weeks', licensed: true, granularity: 'day' },
 			{ key: 'month', licensed: true, granularity: 'day' },
 			{ key: 'quarter', licensed: true, granularity: 'week' },
+			{ key: '6months', licensed: false, granularity: 'week' },
 			{ key: 'year', licensed: false, granularity: 'week' },
 		]);
+	});
+});
+
+describe('getMaxAgeInDaysAndGranularity', () => {
+	let insightsService: InsightsService;
+	let licenseMock: jest.Mocked<LicenseState>;
+
+	beforeAll(() => {
+		licenseMock = mock<LicenseState>();
+		insightsService = new InsightsService(
+			mock<InsightsByPeriodRepository>(),
+			mock<InsightsCompactionService>(),
+			mock<InsightsCollectionService>(),
+			licenseMock,
+		);
+	});
+
+	test('returns correct maxAgeInDays and granularity for a valid licensed date range', () => {
+		licenseMock.getInsightsMaxHistory.mockReturnValue(365);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(true);
+
+		const result = insightsService.getMaxAgeInDaysAndGranularity('month');
+
+		expect(result).toEqual({
+			key: 'month',
+			licensed: true,
+			granularity: 'day',
+			maxAgeInDays: 30,
+		});
+	});
+
+	test('throws an error if the date range is not available', () => {
+		licenseMock.getInsightsMaxHistory.mockReturnValue(365);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(true);
+
+		expect(() => {
+			insightsService.getMaxAgeInDaysAndGranularity('invalidKey' as InsightsDateRange['key']);
+		}).toThrowError('The selected date range is not available');
+	});
+
+	test('throws an error if the date range is not licensed', () => {
+		licenseMock.getInsightsMaxHistory.mockReturnValue(30);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(false);
+
+		expect(() => {
+			insightsService.getMaxAgeInDaysAndGranularity('year');
+		}).toThrowError('The selected date range exceeds the maximum history allowed by your license.');
+	});
+
+	test('returns correct maxAgeInDays and granularity for a valid date range with hourly data disabled', () => {
+		licenseMock.getInsightsMaxHistory.mockReturnValue(90);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(false);
+
+		const result = insightsService.getMaxAgeInDaysAndGranularity('quarter');
+
+		expect(result).toEqual({
+			key: 'quarter',
+			licensed: true,
+			granularity: 'week',
+			maxAgeInDays: 90,
+		});
+	});
+
+	test('returns correct maxAgeInDays and granularity for a valid date range with unlimited history', () => {
+		licenseMock.getInsightsMaxHistory.mockReturnValue(-1);
+		licenseMock.isInsightsHourlyDataLicensed.mockReturnValue(true);
+
+		const result = insightsService.getMaxAgeInDaysAndGranularity('day');
+
+		expect(result).toEqual({
+			key: 'day',
+			licensed: true,
+			granularity: 'hour',
+			maxAgeInDays: 1,
+		});
 	});
 });
