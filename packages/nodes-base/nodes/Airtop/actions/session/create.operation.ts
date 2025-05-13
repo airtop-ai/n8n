@@ -99,7 +99,7 @@ export const description: INodeProperties[] = [
 				type: 'boolean',
 				default: true,
 				description:
-					'Whether to try to maintain the same IP address for the duration of the session. Airtop cannot guarantee that the same IP address will be available for 30 minutes at a time.',
+					'Whether to try to maintain the same IP address for the duration of the session. Airtop can guarantee that the same IP address will be available for up to a maximum of 30 minutes.',
 			},
 		],
 		displayOptions: {
