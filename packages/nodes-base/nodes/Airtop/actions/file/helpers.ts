@@ -7,10 +7,10 @@ import { apiRequest } from '../../transport';
 import type { IAirtopResponseWithFiles } from '../../transport/types';
 
 /**
- * Requests all files from the Airtop API with pagination of 100 files at a time
- * @param this - The execution context
- * @param sessionIds - The session IDs to filter files by
- * @returns A promise that resolves to the response data
+ * Fetches all files from the Airtop API using pagination
+ * @param this - The execution context providing access to n8n functionality
+ * @param sessionIds - Comma-separated string of session IDs to filter files by
+ * @returns Promise resolving to a response object containing the complete array of files
  */
 export async function requestAllFiles(
 	this: IExecuteFunctions,
@@ -52,12 +52,13 @@ export async function requestAllFiles(
 }
 
 /**
- * Polls until the file is available
- * @param this - The execution context
- * @param fileId - The ID of the file to poll
- * @param maxRetries - Maximum number of polling attempts
- * @param interval - Polling interval in milliseconds
- * @returns A promise that resolves to the file ID when the file is available
+ * Polls the Airtop API until a file reaches "available" status or times out
+ * @param this - The execution context providing access to n8n functionality
+ * @param fileId - The unique identifier of the file to poll
+ * @param timeout - Maximum time in milliseconds to wait before failing (defaults to OPERATION_TIMEOUT)
+ * @param intervalSeconds - Time in seconds to wait between polling attempts (defaults to 1)
+ * @returns Promise resolving to the file ID when the file is available
+ * @throws NodeApiError if the operation times out or API request fails
  */
 export async function pollFileUntilAvailable(
 	this: IExecuteFunctions,
@@ -88,12 +89,14 @@ export async function pollFileUntilAvailable(
 }
 
 /**
- * Creates a file entry, uploads the file, and waits until it's available
- * @param this - The execution context
- * @param fileName - Name of the file
- * @param fileBuffer - Buffer containing the file data
- * @param fileType - Type of the file (e.g., 'customer_upload')
- * @returns A promise that resolves to the file ID
+ * Creates a file entry in Airtop, uploads the file content, and waits until processing completes
+ * @param this - The execution context providing access to n8n functionality
+ * @param fileName - Name to assign to the uploaded file
+ * @param fileBuffer - Buffer containing the binary file data to upload
+ * @param fileType - Classification of the file in Airtop (e.g., 'customer_upload')
+ * @param pollingFunction - Function to use for checking file availability (defaults to pollFileUntilAvailable)
+ * @returns Promise resolving to the file ID once upload is complete and file is available
+ * @throws NodeApiError if file creation, upload, or polling fails
  */
 export async function createAndUploadFile(
 	this: IExecuteFunctions,
@@ -129,6 +132,14 @@ export async function createAndUploadFile(
 	return await pollingFunction.call(this, fileId as string);
 }
 
+/**
+ * Waits for a file to be ready in a session by monitoring session events
+ * @param this - The execution context providing access to n8n functionality
+ * @param sessionId - ID of the session to monitor for file events
+ * @param timeout - Maximum time in milliseconds to wait before failing (defaults to OPERATION_TIMEOUT)
+ * @returns Promise that resolves when a file in the session becomes available
+ * @throws NodeApiError if the timeout is reached before a file becomes available
+ */
 export async function waitForFileInSession(
 	this: IExecuteFunctions,
 	sessionId: string,
@@ -172,11 +183,12 @@ export async function waitForFileInSession(
 }
 
 /**
- * Pushes a file into a session and waits for the file to be ready
- * @param this - The execution context
- * @param fileId - ID of the file to push
- * @param sessionId - ID of the session to push the file to
- * @returns A promise that resolves to the file ID
+ * Associates a file with a session and waits until the file is ready for use
+ * @param this - The execution context providing access to n8n functionality
+ * @param fileId - ID of the file to associate with the session
+ * @param sessionId - ID of the session to add the file to
+ * @param pollingFunction - Function to use for checking file availability in session (defaults to waitForFileInSession)
+ * @returns Promise that resolves when the file is ready for use in the session
  */
 export async function pushFileToSession(
 	this: IExecuteFunctions,
@@ -190,12 +202,12 @@ export async function pushFileToSession(
 }
 
 /**
- * Triggers the file input in a window
- * @param this - The execution context
- * @param fileId - ID of the file to input
- * @param windowId - ID of the window
- * @param sessionId - ID of the session
- * @returns A promise that resolves when the file input is triggered
+ * Activates a file upload input in a specific window within a session
+ * @param this - The execution context providing access to n8n functionality
+ * @param fileId - ID of the file to use for the input
+ * @param windowId - ID of the window where the file input will be triggered
+ * @param sessionId - ID of the session containing the window
+ * @returns Promise that resolves when the file input has been triggered
  */
 export async function triggerFileInput(
 	this: IExecuteFunctions,
@@ -209,12 +221,17 @@ export async function triggerFileInput(
 }
 
 /**
- * Creates a file Buffer from a URL or binary data
- * @param this - The execution context
- * @param source - Source type ('url' or 'binary')
- * @param value - URL string or binary data
- * @param itemIndex - Index of the item to get binary data from
- * @returns A promise that resolves to a Buffer
+ * Creates a file Buffer from either a URL or binary data
+ * This function supports two source types:
+ * - URL: Downloads the file from the specified URL and returns it as a Buffer
+ * - Binary: Retrieves binary data from the workflow's binary data storage
+ *
+ * @param this - The execution context providing access to n8n functionality
+ * @param source - Source type, either 'url' or 'binary'
+ * @param value - Either a URL string or binary data property name depending on source type
+ * @param itemIndex - Index of the workflow item to get binary data from (when source is 'binary')
+ * @returns Promise resolving to a Buffer containing the file data
+ * @throws NodeApiError if the source type is unsupported or retrieval fails
  */
 export async function createFileBuffer(
 	this: IExecuteFunctions,
@@ -223,7 +240,6 @@ export async function createFileBuffer(
 	itemIndex: number,
 ): Promise<Buffer> {
 	if (source === 'url') {
-		// Return a Buffer from the URL
 		const buffer = (await this.helpers.httpRequest({
 			url: value,
 			json: false,
@@ -234,7 +250,6 @@ export async function createFileBuffer(
 	}
 
 	if (source === 'binary') {
-		// Get from binary data
 		const binaryData = await this.helpers.getBinaryDataBuffer(itemIndex, value);
 		return binaryData;
 	}
