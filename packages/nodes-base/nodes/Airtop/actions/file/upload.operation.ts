@@ -28,6 +28,32 @@ export const description: INodeProperties[] = [
 		displayOptions,
 	},
 	{
+		displayName: 'File Type',
+		name: 'fileType',
+		type: 'options',
+		options: [
+			{
+				name: 'Browser Download',
+				value: 'browser_download',
+			},
+			{
+				name: 'Screenshot',
+				value: 'screenshot',
+			},
+			{
+				name: 'Video',
+				value: 'video',
+			},
+			{
+				name: 'Customer Upload',
+				value: 'customer_upload',
+			},
+		],
+		default: 'customer_upload',
+		description: "Choose the type of file to upload. Defaults to 'Customer Upload'.",
+		displayOptions,
+	},
+	{
 		displayName: 'Source',
 		name: 'source',
 		type: 'options',
@@ -100,32 +126,6 @@ export const description: INodeProperties[] = [
 				...displayOptions.show,
 			},
 		},
-	},
-	{
-		displayName: 'File Type',
-		name: 'fileType',
-		type: 'options',
-		options: [
-			{
-				name: 'Browser Download',
-				value: 'browser_download',
-			},
-			{
-				name: 'Screenshot',
-				value: 'screenshot',
-			},
-			{
-				name: 'Video',
-				value: 'video',
-			},
-			{
-				name: 'Customer Upload',
-				value: 'customer_upload',
-			},
-		],
-		default: 'customer_upload',
-		description: "Choose the type of file to upload. Defaults to 'Customer Upload'.",
-		displayOptions,
 	},
 ];
 
