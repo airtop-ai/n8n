@@ -46,7 +46,11 @@ export async function execute(
 	const fileId = this.getNodeParameter('fileId', index, '') as string;
 	const sessionId = this.getNodeParameter('sessionId', index, '') as string;
 	const windowId = this.getNodeParameter('windowId', index, '') as string;
-	const elementDescription = this.getNodeParameter('elementDescription', index, '') as string;
+	const elementDescription = this.getNodeParameter(
+		'elementDescription',
+		index,
+		undefined,
+	) as string;
 
 	try {
 		await pushFileToSession.call(this, fileId, sessionId);
