@@ -35,7 +35,7 @@ export const description: INodeProperties[] = [
 		default: '',
 		required: true,
 		description:
-			'Name for the file to upload. Files loaded into the session should have <b>unique names</b>.',
+			'Name for the file to upload. For a session, all files loaded should have <b>unique names</b>.',
 		displayOptions,
 	},
 	{
@@ -148,7 +148,11 @@ export async function execute(
 		index,
 		true,
 	) as boolean;
-	const elementDescription = this.getNodeParameter('elementDescription', index, '') as string;
+	const elementDescription = this.getNodeParameter(
+		'elementDescription',
+		index,
+		undefined,
+	) as string;
 
 	// Get the file content based on source type
 	const fileValue = source === 'url' ? url : binaryPropertyName;

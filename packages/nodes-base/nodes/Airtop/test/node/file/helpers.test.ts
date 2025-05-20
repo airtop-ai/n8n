@@ -290,7 +290,7 @@ describe('Test Airtop file helpers', () => {
 			expect(apiRequestMock).toHaveBeenCalledWith(
 				'POST',
 				`/sessions/${mockSessionId}/windows/${mockWindowId}/file-input`,
-				{ fileId: mockFileId, elementDescription: '' },
+				{ fileId: mockFileId },
 			);
 		});
 	});
