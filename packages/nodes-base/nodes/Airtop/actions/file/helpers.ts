@@ -1,10 +1,10 @@
 import type { IExecuteFunctions } from 'n8n-workflow';
-import { NodeApiError } from 'n8n-workflow';
+import { jsonParse, NodeApiError } from 'n8n-workflow';
 import type { Stream } from 'stream';
 
 import { BASE_URL, ERROR_MESSAGES, OPERATION_TIMEOUT } from '../../constants';
 import { apiRequest } from '../../transport';
-import type { IAirtopResponseWithFiles } from '../../transport/types';
+import type { IAirtopResponseWithFiles, IAirtopServerEvent } from '../../transport/types';
 
 /**
  * Fetches all files from the Airtop API using pagination
@@ -132,6 +132,23 @@ export async function createAndUploadFile(
 	return await pollingFunction.call(this, fileId as string);
 }
 
+function parseEvent(eventText: string): IAirtopServerEvent | null {
+	const dataLine = eventText.split('\n').find((line) => line.startsWith('data:'));
+	if (!dataLine) {
+		return null;
+	}
+	const jsonStr = dataLine.replace('data: ', '').trim();
+	return jsonParse<IAirtopServerEvent>(jsonStr, {
+		errorMessage: 'Failed to parse server event',
+	});
+}
+
+function isFileAvailable(event: IAirtopServerEvent, fileId: string): boolean {
+	return (
+		event.event === 'file_upload_status' && event.fileId === fileId && event.status === 'available'
+	);
+}
+
 /**
  * Waits for a file to be ready in a session by monitoring session events
  * @param this - The execution context providing access to n8n functionality
@@ -143,25 +160,46 @@ export async function createAndUploadFile(
 export async function waitForFileInSession(
 	this: IExecuteFunctions,
 	sessionId: string,
+	fileId: string,
 	timeout = OPERATION_TIMEOUT,
 ): Promise<void> {
-	const url = `${BASE_URL}/sessions/${sessionId}/events`;
+	const url = `${BASE_URL}/sessions/${sessionId}/events?all=true`;
 
-	const fileReadyPromise = new Promise<void>(async (resolve) => {
+	const fileReadyPromise = new Promise<void>(async (resolve, reject) => {
 		const stream = (await this.helpers.httpRequestWithAuthentication.call(this, 'airtopApi', {
 			method: 'GET',
 			url,
 			encoding: 'stream',
 		})) as Stream;
 
-		// handle file upload events
+		const close = () => {
+			resolve();
+			stream.removeAllListeners();
+		};
+
+		const onError = (errorMessage: string) => {
+			const error = new NodeApiError(this.getNode(), {
+				message: errorMessage,
+				description: 'Failed to upload file',
+				code: 500,
+			});
+			reject(error);
+			stream.removeAllListeners();
+		};
+
 		stream.on('data', (data: Uint8Array) => {
-			const event = data.toString();
-			const isFileUploadEvent = event.includes('"event":"file_upload_status"');
-			const isFileAvailable = event.includes('"status":"available"');
-			if (isFileUploadEvent && isFileAvailable) {
-				resolve();
-				stream.removeAllListeners();
+			const event = parseEvent(data.toString());
+			if (!event) {
+				return;
+			}
+			// handle error
+			if (event?.eventData?.error) {
+				onError(event.eventData.error);
+				return;
+			}
+			// handle file available
+			if (isFileAvailable(event, fileId)) {
+				close();
 			}
 		});
 	});
@@ -198,7 +236,7 @@ export async function pushFileToSession(
 ): Promise<void> {
 	// Push file into session
 	await apiRequest.call(this, 'POST', `/files/${fileId}/push`, { sessionIds: [sessionId] });
-	await pollingFunction.call(this, sessionId);
+	await pollingFunction.call(this, sessionId, fileId);
 }
 
 /**

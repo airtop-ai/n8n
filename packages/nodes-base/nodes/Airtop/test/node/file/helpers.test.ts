@@ -1,6 +1,3 @@
-import { EventEmitter } from 'events';
-import type { Stream } from 'stream';
-
 import * as helpers from '../../../actions/file/helpers';
 import { BASE_URL } from '../../../constants';
 import * as transport from '../../../transport';
@@ -12,6 +9,10 @@ const mockFileCreateResponse = {
 		uploadUrl: 'https://upload.example.com/url',
 	},
 };
+
+const mockFileEvent = `
+event: fileEvent
+data: {"event":"file_upload_status","status":"available","fileId":"file-123"}`;
 
 // Mock the transport and other dependencies
 jest.mock('../../../transport', () => {
@@ -195,7 +196,7 @@ describe('Test Airtop file helpers', () => {
 			const mockStream = {
 				on: jest.fn().mockImplementation((event, callback) => {
 					if (event === 'data') {
-						callback('{"event":"file_upload_status","status":"available"}');
+						callback(mockFileEvent);
 					}
 				}),
 				removeAllListeners: jest.fn(),
@@ -205,11 +206,11 @@ describe('Test Airtop file helpers', () => {
 			const mockExecuteFunction = createMockExecuteFunction({});
 			mockExecuteFunction.helpers.httpRequestWithAuthentication = mockHttpRequestWithAuthentication;
 
-			await helpers.waitForFileInSession.call(mockExecuteFunction, 'session-123', 1000);
+			await helpers.waitForFileInSession.call(mockExecuteFunction, 'session-123', 'file-123', 100);
 
 			expect(mockHttpRequestWithAuthentication).toHaveBeenCalledWith('airtopApi', {
 				method: 'GET',
-				url: `${BASE_URL}/sessions/session-123/events`,
+				url: `${BASE_URL}/sessions/session-123/events?all=true`,
 				encoding: 'stream',
 			});
 
@@ -218,21 +219,22 @@ describe('Test Airtop file helpers', () => {
 
 		it('should timeout if no event is received', async () => {
 			// Create a mock stream
-			const mockStream = new EventEmitter() as Stream;
+			const mockStream = {
+				on: jest.fn().mockImplementation(() => {}),
+				removeAllListeners: jest.fn(),
+			};
 			const mockHttpRequestWithAuthentication = jest.fn().mockResolvedValueOnce(mockStream);
 
-			// Create mock execute function
 			const mockExecuteFunction = createMockExecuteFunction({});
 			mockExecuteFunction.helpers.httpRequestWithAuthentication = mockHttpRequestWithAuthentication;
 
-			// Start the wait function with a smaller timeout
 			const waitPromise = helpers.waitForFileInSession.call(
 				mockExecuteFunction,
 				'session-123',
+				'file-123',
 				100,
 			);
 
-			// Wait for promise to reject
 			await expect(waitPromise).rejects.toThrow();
 		});
 	});
@@ -258,7 +260,7 @@ describe('Test Airtop file helpers', () => {
 				sessionIds: [mockSessionId],
 			});
 
-			expect(waitForFileInSessionMock).toHaveBeenCalledWith(mockSessionId);
+			expect(waitForFileInSessionMock).toHaveBeenCalledWith(mockSessionId, mockFileId);
 		});
 	});
 
