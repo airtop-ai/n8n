@@ -8,7 +8,7 @@ import {
 	createFileBuffer,
 } from './helpers';
 import { validateRequiredStringField } from '../../GenericFunctions';
-import { sessionIdField, windowIdField } from '../common/fields';
+import { sessionIdField, windowIdField, elementDescriptionField } from '../common/fields';
 
 const displayOptions = {
 	show: {
@@ -34,7 +34,8 @@ export const description: INodeProperties[] = [
 		type: 'string',
 		default: '',
 		required: true,
-		description: 'Name for the file',
+		description:
+			'Name for the file to upload. Files loaded into the session should have <b>unique names</b>.',
 		displayOptions,
 	},
 	{
@@ -118,6 +119,17 @@ export const description: INodeProperties[] = [
 			'Whether to automatically trigger the file input dialog in the current window. If disabled, the file will only be uploaded to the session without opening the file input dialog.',
 		displayOptions,
 	},
+	{
+		...elementDescriptionField,
+		description: 'Optional description of the file input to interact with',
+		placeholder: 'e.g. the file upload selection box',
+		displayOptions: {
+			show: {
+				triggerFileInputParameter: [true],
+				...displayOptions.show,
+			},
+		},
+	},
 ];
 
 export async function execute(
@@ -136,6 +148,7 @@ export async function execute(
 		index,
 		true,
 	) as boolean;
+	const elementDescription = this.getNodeParameter('elementDescription', index, '') as string;
 
 	// Get the file content based on source type
 	const fileValue = source === 'url' ? url : binaryPropertyName;
@@ -147,7 +160,7 @@ export async function execute(
 		await pushFileToSession.call(this, fileId, sessionId);
 
 		if (triggerFileInputParameter) {
-			await triggerFileInput.call(this, fileId, windowId, sessionId);
+			await triggerFileInput.call(this, fileId, windowId, sessionId, elementDescription);
 		}
 
 		return this.helpers.returnJsonArray({

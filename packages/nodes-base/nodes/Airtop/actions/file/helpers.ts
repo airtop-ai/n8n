@@ -252,9 +252,11 @@ export async function triggerFileInput(
 	fileId: string,
 	windowId: string,
 	sessionId: string,
+	elementDescription = '',
 ): Promise<void> {
 	await apiRequest.call(this, 'POST', `/sessions/${sessionId}/windows/${windowId}/file-input`, {
 		fileId,
+		elementDescription,
 	});
 }
 

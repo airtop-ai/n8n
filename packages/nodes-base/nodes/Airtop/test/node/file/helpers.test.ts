@@ -16,23 +16,25 @@ data: {"event":"file_upload_status","status":"available","fileId":"file-123"}`;
 
 // Mock the transport and other dependencies
 jest.mock('../../../transport', () => {
-	const originalModule = jest.requireActual('../../../transport');
+	const originalModule = jest.requireActual<typeof transport>('../../../transport');
 	return {
 		...originalModule,
-		apiRequest: jest.fn(),
+		apiRequest: jest.fn(async () => {}),
 	};
 });
 
 describe('Test Airtop file helpers', () => {
-	// Common variables and mocks
-	const apiRequestMock = transport.apiRequest as jest.Mock;
+	afterAll(() => {
+		jest.unmock('../../../transport');
+	});
 
-	beforeEach(() => {
+	afterEach(() => {
 		jest.clearAllMocks();
 	});
 
 	describe('requestAllFiles', () => {
 		it('should request all files with pagination', async () => {
+			const apiRequestMock = transport.apiRequest as jest.Mock;
 			const mockFilesResponse1 = {
 				data: {
 					files: [{ id: 'file-1' }, { id: 'file-2' }],
@@ -81,6 +83,7 @@ describe('Test Airtop file helpers', () => {
 		});
 
 		it('should handle empty response', async () => {
+			const apiRequestMock = transport.apiRequest as jest.Mock;
 			const mockEmptyResponse = {
 				data: {
 					files: [],
@@ -107,6 +110,7 @@ describe('Test Airtop file helpers', () => {
 
 	describe('pollFileUntilAvailable', () => {
 		it('should poll until file is available', async () => {
+			const apiRequestMock = transport.apiRequest as jest.Mock;
 			apiRequestMock
 				.mockResolvedValueOnce({ data: { status: 'uploading' } })
 				.mockResolvedValueOnce({ data: { status: 'available' } });
@@ -126,6 +130,7 @@ describe('Test Airtop file helpers', () => {
 		});
 
 		it('should throw timeout error if file never becomes available', async () => {
+			const apiRequestMock = transport.apiRequest as jest.Mock;
 			apiRequestMock.mockResolvedValue({ data: { status: 'processing' } });
 
 			const promise = helpers.pollFileUntilAvailable.call(
@@ -140,6 +145,7 @@ describe('Test Airtop file helpers', () => {
 
 	describe('createAndUploadFile', () => {
 		it('should create file entry, upload file, and poll until available', async () => {
+			const apiRequestMock = transport.apiRequest as jest.Mock;
 			apiRequestMock
 				.mockResolvedValueOnce(mockFileCreateResponse)
 				.mockResolvedValueOnce({ data: { status: 'available' } });
@@ -177,6 +183,7 @@ describe('Test Airtop file helpers', () => {
 		});
 
 		it('should throw error if file creation response is missing id or upload URL', async () => {
+			const apiRequestMock = transport.apiRequest as jest.Mock;
 			apiRequestMock.mockResolvedValueOnce({});
 
 			await expect(
@@ -241,6 +248,7 @@ describe('Test Airtop file helpers', () => {
 
 	describe('pushFileToSession', () => {
 		it('should push file to session and wait', async () => {
+			const apiRequestMock = transport.apiRequest as jest.Mock;
 			const mockFileId = 'file-123';
 			const mockSessionId = 'session-123';
 			apiRequestMock.mockResolvedValueOnce({});
@@ -266,11 +274,11 @@ describe('Test Airtop file helpers', () => {
 
 	describe('triggerFileInput', () => {
 		it('should trigger file input in window', async () => {
+			const apiRequestMock = transport.apiRequest as jest.Mock;
+			apiRequestMock.mockResolvedValueOnce({});
 			const mockFileId = 'file-123';
 			const mockWindowId = 'window-123';
 			const mockSessionId = 'session-123';
-
-			apiRequestMock.mockResolvedValueOnce({});
 
 			await helpers.triggerFileInput.call(
 				createMockExecuteFunction({}),
@@ -282,7 +290,7 @@ describe('Test Airtop file helpers', () => {
 			expect(apiRequestMock).toHaveBeenCalledWith(
 				'POST',
 				`/sessions/${mockSessionId}/windows/${mockWindowId}/file-input`,
-				{ fileId: mockFileId },
+				{ fileId: mockFileId, elementDescription: '' },
 			);
 		});
 	});
@@ -290,7 +298,7 @@ describe('Test Airtop file helpers', () => {
 	describe('createFileBuffer', () => {
 		it('should create buffer from URL', async () => {
 			const mockUrl = 'https://example.com/file.pdf';
-			const mockBuffer = Buffer.from('mock file content');
+			const mockBuffer = [1, 2, 3];
 
 			// Mock http request
 			const mockHttpRequest = jest.fn().mockResolvedValueOnce(mockBuffer);
@@ -311,10 +319,10 @@ describe('Test Airtop file helpers', () => {
 
 		it('should create buffer from binary data', async () => {
 			const mockBinaryPropertyName = 'data';
-			const mockBuffer = Buffer.from('mock binary content');
+			const mockBuffer = [1, 2, 3];
 
 			// Mock getBinaryDataBuffer
-			const mockGetBinaryDataBuffer = jest.fn().mockResolvedValueOnce(mockBuffer);
+			const mockGetBinaryDataBuffer = jest.fn().mockResolvedValue(mockBuffer);
 
 			// Create mock execute function with getBinaryDataBuffer helper
 			const mockExecuteFunction = createMockExecuteFunction({});

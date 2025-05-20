@@ -2,7 +2,7 @@ import type { IExecuteFunctions, INodeExecutionData, INodeProperties } from 'n8n
 import { NodeOperationError } from 'n8n-workflow';
 
 import { pushFileToSession, triggerFileInput } from './helpers';
-import { sessionIdField, windowIdField } from '../common/fields';
+import { sessionIdField, windowIdField, elementDescriptionField } from '../common/fields';
 
 const displayOptions = {
 	show: {
@@ -13,6 +13,16 @@ const displayOptions = {
 
 export const description: INodeProperties[] = [
 	{
+		...sessionIdField,
+		description: 'The session ID to load the file into',
+		displayOptions,
+	},
+	{
+		...windowIdField,
+		description: 'The window ID to trigger the file input in',
+		displayOptions,
+	},
+	{
 		displayName: 'File ID',
 		name: 'fileId',
 		type: 'string',
@@ -22,13 +32,9 @@ export const description: INodeProperties[] = [
 		displayOptions,
 	},
 	{
-		...sessionIdField,
-		description: 'The session ID to load the file into',
-		displayOptions,
-	},
-	{
-		...windowIdField,
-		description: 'The window ID to trigger the file input in',
+		...elementDescriptionField,
+		description: 'Optional description of the file input to interact with',
+		placeholder: 'e.g. the file upload selection box',
 		displayOptions,
 	},
 ];
@@ -40,10 +46,11 @@ export async function execute(
 	const fileId = this.getNodeParameter('fileId', index, '') as string;
 	const sessionId = this.getNodeParameter('sessionId', index, '') as string;
 	const windowId = this.getNodeParameter('windowId', index, '') as string;
+	const elementDescription = this.getNodeParameter('elementDescription', index, '') as string;
 
 	try {
 		await pushFileToSession.call(this, fileId, sessionId);
-		await triggerFileInput.call(this, fileId, windowId, sessionId);
+		await triggerFileInput.call(this, fileId, windowId, sessionId, elementDescription);
 
 		return this.helpers.returnJsonArray({
 			sessionId,
