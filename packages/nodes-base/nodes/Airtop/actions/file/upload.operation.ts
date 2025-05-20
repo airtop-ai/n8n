@@ -148,7 +148,11 @@ export async function execute(
 		index,
 		true,
 	) as boolean;
-	const elementDescription = this.getNodeParameter('elementDescription', index, '') as string;
+	const elementDescription = this.getNodeParameter(
+		'elementDescription',
+		index,
+		undefined,
+	) as string;
 
 	// Get the file content based on source type
 	const fileValue = source === 'url' ? url : binaryPropertyName;
