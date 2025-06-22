@@ -1,8 +1,9 @@
+import type { Logger } from '@n8n/backend-common';
 import type { IExecutionResponse } from '@n8n/db';
 import type { ExecutionRepository } from '@n8n/db';
 import { mock } from 'jest-mock-extended';
 import type { WorkflowExecute as ActualWorkflowExecute } from 'n8n-core';
-import { type Logger } from 'n8n-core';
+import { ExternalSecretsProxy } from 'n8n-core';
 import { mockInstance } from 'n8n-core/test/utils';
 import type { IPinData, ITaskData, IWorkflowExecuteAdditionalData } from 'n8n-workflow';
 import { Workflow, type IRunExecutionData, type WorkflowExecuteMode } from 'n8n-workflow';
@@ -11,7 +12,6 @@ import { CredentialsHelper } from '@/credentials-helper';
 import { VariablesService } from '@/environments.ee/variables/variables.service.ee';
 import { ExternalHooks } from '@/external-hooks';
 import type { ManualExecutionService } from '@/manual-execution.service';
-import { SecretsHelper } from '@/secrets-helpers.ee';
 import { WorkflowStatisticsService } from '@/services/workflow-statistics.service';
 import * as WorkflowExecuteAdditionalData from '@/workflow-execute-additional-data';
 import { WorkflowStaticDataService } from '@/workflows/workflow-static-data.service';
@@ -23,7 +23,7 @@ mockInstance(VariablesService, {
 	getAllCached: jest.fn().mockResolvedValue([]),
 });
 mockInstance(CredentialsHelper);
-mockInstance(SecretsHelper);
+mockInstance(ExternalSecretsProxy);
 mockInstance(WorkflowStaticDataService);
 mockInstance(WorkflowStatisticsService);
 mockInstance(ExternalHooks);
@@ -53,7 +53,6 @@ describe('JobProcessor', () => {
 		);
 		const jobProcessor = new JobProcessor(
 			logger,
-			mock(),
 			executionRepository,
 			mock(),
 			mock(),
@@ -75,7 +74,6 @@ describe('JobProcessor', () => {
 					mode,
 					workflowData: { nodes: [] },
 					data: mock<IRunExecutionData>({
-						isTestWebhook: false,
 						executionData: undefined,
 					}),
 				}),
@@ -84,7 +82,6 @@ describe('JobProcessor', () => {
 			const manualExecutionService = mock<ManualExecutionService>();
 			const jobProcessor = new JobProcessor(
 				logger,
-				mock(),
 				executionRepository,
 				mock(),
 				mock(),
@@ -105,7 +102,6 @@ describe('JobProcessor', () => {
 			mode: 'manual',
 			workflowData: { nodes: [], pinData },
 			data: mock<IRunExecutionData>({
-				isTestWebhook: false,
 				resultData: {
 					runData: {
 						trigger: [mock<ITaskData>({ executionIndex: 1 })],
@@ -124,7 +120,6 @@ describe('JobProcessor', () => {
 		const manualExecutionService = mock<ManualExecutionService>();
 		const jobProcessor = new JobProcessor(
 			logger,
-			mock(),
 			executionRepository,
 			mock(),
 			mock(),
@@ -164,7 +159,6 @@ describe('JobProcessor', () => {
 
 			const executionRepository = mock<ExecutionRepository>();
 			const executionData = mock<IRunExecutionData>({
-				isTestWebhook: false,
 				startData: undefined,
 				executionData: {
 					nodeExecutionStack: [
@@ -188,7 +182,6 @@ describe('JobProcessor', () => {
 			const manualExecutionService = mock<ManualExecutionService>();
 			const jobProcessor = new JobProcessor(
 				logger,
-				mock(),
 				executionRepository,
 				mock(),
 				mock(),

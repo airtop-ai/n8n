@@ -10,7 +10,6 @@ import type { ICredentialsEncrypted } from 'n8n-workflow';
 import { jsonParse, UserError } from 'n8n-workflow';
 
 import { UM_FIX_INSTRUCTION } from '@/constants';
-import * as Db from '@/db';
 
 import { BaseCommand } from '../base-command';
 
@@ -69,7 +68,8 @@ export class ImportCredentialsCommand extends BaseCommand {
 
 		const credentials = await this.readCredentials(flags.input, flags.separate);
 
-		await Db.getConnection().transaction(async (transactionManager) => {
+		const { manager: dbManager } = Container.get(ProjectRepository);
+		await dbManager.transaction(async (transactionManager) => {
 			this.transactionManager = transactionManager;
 
 			const project = await this.getProject(flags.userId, flags.projectId);
@@ -102,6 +102,7 @@ export class ImportCredentialsCommand extends BaseCommand {
 	}
 
 	private async storeCredential(credential: Partial<CredentialsEntity>, project: Project) {
+		// @ts-ignore CAT-957
 		const result = await this.transactionManager.upsert(CredentialsEntity, credential, ['id']);
 
 		const sharingExists = await this.transactionManager.existsBy(SharedCredentials, {

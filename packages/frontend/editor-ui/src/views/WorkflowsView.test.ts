@@ -5,7 +5,8 @@ import { useUsersStore } from '@/stores/users.store';
 import { createComponentRenderer } from '@/__tests__/render';
 import { useProjectsStore } from '@/stores/projects.store';
 import { createTestingPinia } from '@pinia/testing';
-import { STORES, VIEWS } from '@/constants';
+import { VIEWS } from '@/constants';
+import { STORES } from '@n8n/stores';
 import { mockedStore, waitAllPromises } from '@/__tests__/utils';
 import type { IUser, WorkflowListResource } from '@/Interface';
 import { useSourceControlStore } from '@/stores/sourceControl.store';
@@ -359,7 +360,10 @@ describe('WorkflowsView', () => {
 			workflowsStore.fetchActiveWorkflows.mockResolvedValue([]);
 		});
 		it('should reinitialize on source control pullWorkfolder', async () => {
-			vi.spyOn(usersApi, 'getUsers').mockResolvedValue([]);
+			vi.spyOn(usersApi, 'getUsers').mockResolvedValue({
+				count: 0,
+				items: [],
+			});
 			const userStore = mockedStore(useUsersStore);
 
 			const sourceControl = useSourceControlStore();

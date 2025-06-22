@@ -1,16 +1,25 @@
+import { Logger } from '@n8n/backend-common';
 import type {
 	CredentialsEntity,
+	CredentialUsedByWorkflow,
 	User,
 	WorkflowEntity,
 	WorkflowWithSharingsAndCredentials,
 	WorkflowWithSharingsMetaDataAndCredentials,
 } from '@n8n/db';
-import { Folder, Project, SharedWorkflow, CredentialsRepository, FolderRepository } from '@n8n/db';
+import {
+	Folder,
+	Project,
+	SharedWorkflow,
+	CredentialsRepository,
+	FolderRepository,
+	SharedWorkflowRepository,
+	WorkflowRepository,
+} from '@n8n/db';
 import { Service } from '@n8n/di';
 // eslint-disable-next-line n8n-local-rules/misplaced-n8n-typeorm-import
 import { In, type EntityManager } from '@n8n/typeorm';
 import omit from 'lodash/omit';
-import { Logger } from 'n8n-core';
 import type { IWorkflowBase, WorkflowId } from 'n8n-workflow';
 import { NodeOperationError, PROJECT_ROOT, UserError, WorkflowActivationError } from 'n8n-workflow';
 
@@ -18,8 +27,6 @@ import { ActiveWorkflowManager } from '@/active-workflow-manager';
 import { CredentialsFinderService } from '@/credentials/credentials-finder.service';
 import { CredentialsService } from '@/credentials/credentials.service';
 import { EnterpriseCredentialsService } from '@/credentials/credentials.service.ee';
-import { SharedWorkflowRepository } from '@/databases/repositories/shared-workflow.repository';
-import { WorkflowRepository } from '@/databases/repositories/workflow.repository';
 import { BadRequestError } from '@/errors/response-errors/bad-request.error';
 import { NotFoundError } from '@/errors/response-errors/not-found.error';
 import { TransferWorkflowError } from '@/errors/response-errors/transfer-workflow.error';
@@ -334,6 +341,7 @@ export class EnterpriseWorkflowService {
 		await this.shareCredentialsWithProject(user, shareCredentials, destinationProject.id);
 
 		// 9. Move workflow to the right folder if any
+		// @ts-ignore CAT-957
 		await this.workflowRepository.update({ id: workflow.id }, { parentFolder });
 
 		// 10. try to activate it again if it was active
@@ -342,6 +350,29 @@ export class EnterpriseWorkflowService {
 		}
 
 		return;
+	}
+
+	async getFolderUsedCredentials(user: User, folderId: string, projectId: string) {
+		await this.folderService.findFolderInProjectOrFail(folderId, projectId);
+
+		const workflows = await this.workflowFinderService.findAllWorkflowsForUser(
+			user,
+			['workflow:read'],
+			folderId,
+			projectId,
+		);
+
+		const usedCredentials = new Map<string, CredentialUsedByWorkflow>();
+
+		for (const workflow of workflows) {
+			const workflowWithMetaData = this.addOwnerAndSharings(workflow as unknown as WorkflowEntity);
+			await this.addCredentialsToWorkflow(workflowWithMetaData, user);
+			for (const credential of workflowWithMetaData?.usedCredentials ?? []) {
+				usedCredentials.set(credential.id, credential);
+			}
+		}
+
+		return [...usedCredentials.values()];
 	}
 
 	async transferFolder(

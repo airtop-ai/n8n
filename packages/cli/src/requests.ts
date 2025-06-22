@@ -217,7 +217,7 @@ export declare namespace AnnotationTagsRequest {
 export declare namespace NodeRequest {
 	type GetAll = AuthenticatedRequest;
 
-	type Post = AuthenticatedRequest<{}, {}, { name?: string }>;
+	type Post = AuthenticatedRequest<{}, {}, { name?: string; verify?: boolean; version?: string }>;
 
 	type Delete = AuthenticatedRequest<{}, {}, {}, { name: string }>;
 
@@ -294,6 +294,7 @@ export declare namespace ProjectRequest {
 		name: string | undefined;
 		icon: ProjectIcon | null;
 		type: ProjectType;
+		description: string | null;
 		relations: ProjectRelationResponse[];
 		scopes: Scope[];
 	};

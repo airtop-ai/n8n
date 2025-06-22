@@ -167,16 +167,19 @@ export class SupplyDataContext extends BaseExecuteContext implements ISupplyData
 		return super.getInputItems(inputIndex, connectionType) ?? [];
 	}
 
+	getNextRunIndex(): number {
+		const nodeName = this.node.name;
+		return this.runExecutionData.resultData.runData[nodeName]?.length ?? 0;
+	}
+
 	/** @deprecated create a context object with inputData for every runIndex */
 	addInputData(
 		connectionType: AINodeConnectionType,
 		data: INodeExecutionData[][],
+		runIndex?: number,
 	): { index: number } {
 		const nodeName = this.node.name;
-		let currentNodeRunIndex = 0;
-		if (this.runExecutionData.resultData.runData.hasOwnProperty(nodeName)) {
-			currentNodeRunIndex = this.runExecutionData.resultData.runData[nodeName].length;
-		}
+		const currentNodeRunIndex = this.getNextRunIndex();
 
 		this.addExecutionDataFunctions(
 			'input',
@@ -184,6 +187,8 @@ export class SupplyDataContext extends BaseExecuteContext implements ISupplyData
 			connectionType,
 			nodeName,
 			currentNodeRunIndex,
+			undefined,
+			runIndex,
 		).catch((error) => {
 			this.logger.warn(
 				`There was a problem logging input data of node "${nodeName}": ${
@@ -202,6 +207,7 @@ export class SupplyDataContext extends BaseExecuteContext implements ISupplyData
 		currentNodeRunIndex: number,
 		data: INodeExecutionData[][] | ExecutionBaseError,
 		metadata?: ITaskMetadata,
+		sourceNodeRunIndex?: number,
 	): void {
 		const nodeName = this.node.name;
 		this.addExecutionDataFunctions(
@@ -211,6 +217,7 @@ export class SupplyDataContext extends BaseExecuteContext implements ISupplyData
 			nodeName,
 			currentNodeRunIndex,
 			metadata,
+			sourceNodeRunIndex,
 		).catch((error) => {
 			this.logger.warn(
 				`There was a problem logging output data of node "${nodeName}": ${
@@ -228,17 +235,23 @@ export class SupplyDataContext extends BaseExecuteContext implements ISupplyData
 		sourceNodeName: string,
 		currentNodeRunIndex: number,
 		metadata?: ITaskMetadata,
+		sourceNodeRunIndex?: number,
 	): Promise<void> {
 		const {
 			additionalData,
 			runExecutionData,
-			runIndex: sourceNodeRunIndex,
+			runIndex: currentRunIndex,
 			node: { name: nodeName },
 		} = this;
 
 		let taskData: ITaskData | undefined;
 		const source: ISourceData[] = this.parentNode
-			? [{ previousNode: this.parentNode.name, previousNodeRun: sourceNodeRunIndex }]
+			? [
+					{
+						previousNode: this.parentNode.name,
+						previousNodeRun: sourceNodeRunIndex ?? currentRunIndex,
+					},
+				]
 			: [];
 
 		if (type === 'input') {
@@ -311,14 +324,13 @@ export class SupplyDataContext extends BaseExecuteContext implements ISupplyData
 				runExecutionData.executionData!.metadata[sourceNodeName] = [];
 				sourceTaskData = runExecutionData.executionData!.metadata[sourceNodeName];
 			}
-
-			if (!sourceTaskData[sourceNodeRunIndex]) {
-				sourceTaskData[sourceNodeRunIndex] = {
+			if (!sourceTaskData[currentNodeRunIndex]) {
+				sourceTaskData[currentNodeRunIndex] = {
 					subRun: [],
 				};
 			}
 
-			sourceTaskData[sourceNodeRunIndex].subRun!.push({
+			sourceTaskData[currentNodeRunIndex].subRun!.push({
 				node: nodeName,
 				runIndex: currentNodeRunIndex,
 			});

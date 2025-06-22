@@ -1,13 +1,12 @@
 import type { User } from '@n8n/db';
-import { ProjectRepository } from '@n8n/db';
+import { ProjectRepository, SharedCredentialsRepository, SharedWorkflowRepository } from '@n8n/db';
 import { Container } from '@n8n/di';
 import { hasGlobalScope, rolesWithScope, type Scope } from '@n8n/permissions';
 // eslint-disable-next-line n8n-local-rules/misplaced-n8n-typeorm-import
 import { In } from '@n8n/typeorm';
 import { UnexpectedError } from 'n8n-workflow';
 
-import { SharedCredentialsRepository } from '@/databases/repositories/shared-credentials.repository';
-import { SharedWorkflowRepository } from '@/databases/repositories/shared-workflow.repository';
+import { NotFoundError } from '@/errors/response-errors/not-found.error';
 
 /**
  * Check if a user has the required scopes. The check can be:
@@ -52,19 +51,33 @@ export async function userHasScopes(
 	// those resource roles over the resource being checked.
 
 	if (credentialId) {
-		return await Container.get(SharedCredentialsRepository).existsBy({
+		const credentials = await Container.get(SharedCredentialsRepository).findBy({
 			credentialsId: credentialId,
-			projectId: In(userProjectIds),
-			role: In(rolesWithScope('credential', scopes)),
 		});
+		if (!credentials.length) {
+			throw new NotFoundError(`Credential with ID "${credentialId}" not found.`);
+		}
+
+		return credentials.some(
+			(c) =>
+				userProjectIds.includes(c.projectId) &&
+				rolesWithScope('credential', scopes).includes(c.role),
+		);
 	}
 
 	if (workflowId) {
-		return await Container.get(SharedWorkflowRepository).existsBy({
+		const workflows = await Container.get(SharedWorkflowRepository).findBy({
 			workflowId,
-			projectId: In(userProjectIds),
-			role: In(rolesWithScope('workflow', scopes)),
 		});
+
+		if (!workflows.length) {
+			throw new NotFoundError(`Workflow with ID "${workflowId}" not found.`);
+		}
+
+		return workflows.some(
+			(w) =>
+				userProjectIds.includes(w.projectId) && rolesWithScope('workflow', scopes).includes(w.role),
+		);
 	}
 
 	if (projectId) return userProjectIds.includes(projectId);

@@ -4,10 +4,12 @@ import { type MockedStore, mockedStore } from '@/__tests__/utils';
 import {
 	EnterpriseEditionFeature,
 	MODAL_CONFIRM,
-	STORES,
 	VIEWS,
 	WORKFLOW_SHARE_MODAL_KEY,
+	PROJECT_MOVE_RESOURCE_MODAL,
 } from '@/constants';
+import type { IWorkflowDb } from '@/Interface';
+import { STORES } from '@n8n/stores';
 import { createTestingPinia } from '@pinia/testing';
 import userEvent from '@testing-library/user-event';
 import { useUIStore } from '@/stores/ui.store';
@@ -59,6 +61,11 @@ const initialState = {
 			enterprise: {
 				[EnterpriseEditionFeature.Sharing]: true,
 				[EnterpriseEditionFeature.WorkflowHistory]: true,
+				projects: {
+					team: {
+						limit: -1,
+					},
+				},
 			},
 		},
 		areTagsEnabled: true,
@@ -128,8 +135,7 @@ describe('WorkflowDetails', () => {
 			},
 		});
 
-		const workflowName = getByTestId('workflow-name-input');
-		const workflowNameInput = workflowName.querySelector('input');
+		const workflowNameInput = getByTestId('inline-edit-input');
 
 		expect(workflowNameInput).toHaveValue('Test Workflow');
 		expect(getByText('tag1')).toBeInTheDocument();
@@ -298,10 +304,38 @@ describe('WorkflowDetails', () => {
 			expect(queryByTestId('workflow-menu-item-unarchive')).not.toBeInTheDocument();
 		});
 
-		it("should call onWorkflowMenuSelect on 'Archive' option click", async () => {
+		it("should call onWorkflowMenuSelect on 'Archive' option click on nonactive workflow", async () => {
 			const { getByTestId } = renderComponent({
 				props: {
 					...workflow,
+					active: false,
+					readOnly: false,
+					isArchived: false,
+					scopes: ['workflow:delete'],
+				},
+			});
+
+			workflowsStore.archiveWorkflow.mockResolvedValue(undefined);
+
+			await userEvent.click(getByTestId('workflow-menu'));
+			await userEvent.click(getByTestId('workflow-menu-item-archive'));
+
+			expect(message.confirm).toHaveBeenCalledTimes(0);
+			expect(toast.showError).toHaveBeenCalledTimes(0);
+			expect(toast.showMessage).toHaveBeenCalledTimes(1);
+			expect(workflowsStore.archiveWorkflow).toHaveBeenCalledTimes(1);
+			expect(workflowsStore.archiveWorkflow).toHaveBeenCalledWith(workflow.id);
+			expect(router.push).toHaveBeenCalledTimes(1);
+			expect(router.push).toHaveBeenCalledWith({
+				name: VIEWS.WORKFLOWS,
+			});
+		});
+
+		it("should confirm onWorkflowMenuSelect on 'Archive' option click on active workflow", async () => {
+			const { getByTestId } = renderComponent({
+				props: {
+					...workflow,
+					active: true,
 					readOnly: false,
 					isArchived: false,
 					scopes: ['workflow:delete'],
@@ -364,6 +398,27 @@ describe('WorkflowDetails', () => {
 			expect(router.push).toHaveBeenCalledTimes(1);
 			expect(router.push).toHaveBeenCalledWith({
 				name: VIEWS.WORKFLOWS,
+			});
+		});
+
+		it("should call onWorkflowMenuSelect on 'Change owner' option click", async () => {
+			const openModalSpy = vi.spyOn(uiStore, 'openModalWithData');
+
+			workflowsStore.workflowsById = { [workflow.id]: workflow as IWorkflowDb };
+
+			const { getByTestId } = renderComponent({
+				props: {
+					...workflow,
+					scopes: ['workflow:move'],
+				},
+			});
+
+			await userEvent.click(getByTestId('workflow-menu'));
+			await userEvent.click(getByTestId('workflow-menu-item-change-owner'));
+
+			expect(openModalSpy).toHaveBeenCalledWith({
+				name: PROJECT_MOVE_RESOURCE_MODAL,
+				data: expect.objectContaining({ resource: expect.objectContaining({ id: workflow.id }) }),
 			});
 		});
 	});

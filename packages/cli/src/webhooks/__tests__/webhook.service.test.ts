@@ -1,11 +1,11 @@
 import { WebhookEntity } from '@n8n/db';
+import type { WebhookRepository } from '@n8n/db';
 import { mock } from 'jest-mock-extended';
 import type { INode, INodeType, IWebhookData, IWorkflowExecuteAdditionalData } from 'n8n-workflow';
 import { Workflow } from 'n8n-workflow';
 import { v4 as uuid } from 'uuid';
 
 import config from '@/config';
-import type { WebhookRepository } from '@/databases/repositories/webhook.repository';
 import type { NodeTypes } from '@/node-types';
 import type { CacheService } from '@/services/cache/cache.service';
 import { WebhookService } from '@/webhooks/webhook.service';
@@ -384,6 +384,118 @@ describe('WebhookService', () => {
 
 			expect(webhookRepository.findOneBy).toHaveBeenCalledTimes(2);
 			expect(webhookRepository.findBy).toHaveBeenCalledTimes(2);
+		});
+	});
+
+	describe('isDynamicPath', () => {
+		test.each(['a', 'a/b'])('should treat static path (%s) as static', (path) => {
+			const workflow = new Workflow({
+				id: 'test-workflow',
+				nodes: [],
+				connections: {},
+				active: true,
+				nodeTypes,
+			});
+
+			const node = mock<INode>({
+				name: 'Webhook',
+				type: 'n8n-nodes-base.webhook',
+			});
+
+			const nodeType = mock<INodeType>({
+				description: {
+					webhooks: [
+						{
+							name: 'default',
+							httpMethod: 'GET',
+							path,
+							isFullPath: false,
+							restartWebhook: false,
+						},
+					],
+				},
+			});
+
+			nodeTypes.getByNameAndVersion.mockReturnValue(nodeType);
+
+			const webhooks = webhookService.getNodeWebhooks(workflow, node, additionalData);
+
+			expect(webhooks).toHaveLength(1);
+			expect(webhooks[0].webhookId).toBeUndefined();
+		});
+
+		test.each([':', '/:'])('should treat literal colon path (%s) as static', (path) => {
+			const workflow = new Workflow({
+				id: 'test-workflow',
+				nodes: [],
+				connections: {},
+				active: true,
+				nodeTypes,
+			});
+
+			const nodeWithWebhookId = mock<INode>({
+				name: 'Webhook',
+				type: 'n8n-nodes-base.webhook',
+			});
+
+			const nodeType = mock<INodeType>({
+				description: {
+					webhooks: [
+						{
+							name: 'default',
+							httpMethod: 'GET',
+							path,
+							isFullPath: false,
+							restartWebhook: false,
+						},
+					],
+				},
+			});
+
+			nodeTypes.getByNameAndVersion.mockReturnValue(nodeType);
+
+			const webhooks = webhookService.getNodeWebhooks(workflow, nodeWithWebhookId, additionalData);
+
+			expect(webhooks).toHaveLength(1);
+			expect(webhooks[0].webhookId).toBeUndefined();
+		});
+
+		test('should treat dynamic path (user/:id) as dynamic', () => {
+			const workflow = new Workflow({
+				id: 'test-workflow',
+				nodes: [],
+				connections: {},
+				active: true,
+				nodeTypes,
+			});
+
+			const nodeWithWebhookId = mock<INode>({
+				name: 'Webhook',
+				type: 'n8n-nodes-base.webhook',
+				disabled: false,
+				webhookId: 'test-webhook-id',
+			});
+
+			const nodeType = mock<INodeType>({
+				description: {
+					webhooks: [
+						{
+							name: 'default',
+							httpMethod: 'GET',
+							path: 'user/:id',
+							isFullPath: false,
+							restartWebhook: false,
+						},
+					],
+				},
+			});
+
+			nodeTypes.getByNameAndVersion.mockReturnValue(nodeType);
+
+			const webhooks = webhookService.getNodeWebhooks(workflow, nodeWithWebhookId, additionalData);
+
+			expect(webhooks).toHaveLength(1);
+			expect(webhooks[0].webhookId).toBe('test-webhook-id');
 		});
 	});
 });
