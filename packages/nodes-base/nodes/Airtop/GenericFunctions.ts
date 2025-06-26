@@ -13,7 +13,7 @@ import { BASE_URL, type TScrollingMode } from './constants';
 import {
 	ERROR_MESSAGES,
 	DEFAULT_TIMEOUT_MINUTES,
-	DEFAULT_DOWNLOAD_TIMEOUT,
+	DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
 	MIN_TIMEOUT_MINUTES,
 	MAX_TIMEOUT_MINUTES,
 	SESSION_STATUS,
@@ -489,14 +489,14 @@ function parseEvent(eventText: string): IAirtopServerEvent | null {
  * @param this - The execution context providing access to n8n functionality
  * @param sessionId - ID of the session to check for events
  * @param condition - Function to check if the event meets the condition
- * @param timeout - Maximum time in milliseconds to wait before failing (defaults to OPERATION_TIMEOUT)
+ * @param timeoutInSeconds - Maximum time in seconds to wait before failing (defaults to DEFAULT_DOWNLOAD_TIMEOUT_SECONDS)
  * @returns Promise resolving to the event when the condition is met
  */
 export async function waitForSessionEvent(
 	this: IExecuteFunctions,
 	sessionId: string,
 	condition: (event: IAirtopServerEvent) => boolean,
-	timeout = DEFAULT_DOWNLOAD_TIMEOUT,
+	timeoutInSeconds = DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
 ): Promise<IAirtopServerEvent> {
 	const url = `${BASE_URL}/sessions/${sessionId}/events?all=true`;
 	let stream: Stream;
@@ -531,7 +531,7 @@ export async function waitForSessionEvent(
 				}),
 			);
 			stream.removeAllListeners();
-		}, timeout);
+		}, timeoutInSeconds * 1000);
 	});
 
 	const result = await Promise.race([eventPromise, timeoutPromise]);
